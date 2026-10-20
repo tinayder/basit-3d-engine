@@ -20,6 +20,7 @@
 #include <SFML/System.hpp>
 
 const float PI = 3.14159265f;
+const float MOUSE_SENSIVITY = 0.4f;
 const float TO_RAD = PI / 180.0f;
 
 // 3D point/vector
@@ -206,18 +207,15 @@ int main() {
     DirectedLight light(Point(0.25f, 0.25f, 1.0f).normalize(), sf::Color::White, 1.0f);
 
     // *insert epic gif of a guy making a cube in blender*
-    float init_x = 30.0f;
-    float init_y = 45.0f;
-    float init_z = 0.0f;
 
-    Point v0 = Point(-50.0f, -50.0f, -50.0f).rotate(init_x, init_y, init_z);
-    Point v1 = Point( 50.0f, -50.0f, -50.0f).rotate(init_x, init_y, init_z);
-    Point v2 = Point( 50.0f,  50.0f, -50.0f).rotate(init_x, init_y, init_z);
-    Point v3 = Point(-50.0f,  50.0f, -50.0f).rotate(init_x, init_y, init_z);
-    Point v4 = Point(-50.0f, -50.0f,  50.0f).rotate(init_x, init_y, init_z);
-    Point v5 = Point( 50.0f, -50.0f,  50.0f).rotate(init_x, init_y, init_z);
-    Point v6 = Point( 50.0f,  50.0f,  50.0f).rotate(init_x, init_y, init_z);
-    Point v7 = Point(-50.0f,  50.0f,  50.0f).rotate(init_x, init_y, init_z);
+    Point v0(-50.0f, -50.0f, -50.0f);
+    Point v1( 50.0f, -50.0f, -50.0f);
+    Point v2( 50.0f,  50.0f, -50.0f);
+    Point v3(-50.0f,  50.0f, -50.0f);
+    Point v4(-50.0f, -50.0f,  50.0f);
+    Point v5( 50.0f, -50.0f,  50.0f);
+    Point v6( 50.0f,  50.0f,  50.0f);
+    Point v7(-50.0f,  50.0f,  50.0f);
 
     // *the gif has ended*
 
@@ -250,8 +248,8 @@ int main() {
                     float delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
                     float delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
 
-                    float rot_step_x = delta_y * 0.3f;
-                    float rot_step_y = -delta_x * 0.3f;
+                    float rot_step_x = delta_y * MOUSE_SENSIVITY;
+                    float rot_step_y = -delta_x * MOUSE_SENSIVITY;
 
                     v0 = v0.rotate(rot_step_x, rot_step_y, 0.0f);
                     v1 = v1.rotate(rot_step_x, rot_step_y, 0.0f);

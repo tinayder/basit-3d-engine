@@ -159,7 +159,7 @@ public:
         this->normal = cross_product.normalize();
     }
 
-    // for shadows
+    // for light
     [[nodiscard]] sf::Color calculate_color(const DirectedLight& light) const {
         float dot = normal * light.direction;
         if (dot < 0.0f) dot = 0.0f;

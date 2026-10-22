@@ -19,7 +19,7 @@
 #include <SFML/System.hpp>
 
 const float PI = 3.14159265f;
-const float MOUSE_SENSIVITY = 0.4f;
+const float MOUSE_SENSITIVITY = 0.4f;
 const float TO_RAD = PI / 180.0f;
 const int WIDTH = 800, HEIGHT = 600;
 

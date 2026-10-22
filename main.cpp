@@ -22,6 +22,7 @@
 const float PI = 3.14159265f;
 const float MOUSE_SENSIVITY = 0.4f;
 const float TO_RAD = PI / 180.0f;
+const int WIDTH = 800, HEIGHT = 600;
 
 // 3D point/vector
 class Point {
@@ -174,6 +175,13 @@ public:
         return {final_r, final_g, final_b};
     }
 
+    // for Painter's algorithm
+    [[nodiscard]] float average_depth(const Point& camera_position) const {
+        Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
+        float result = (center - camera_position).modulus();
+        return result;
+    }
+
     // render the triangle on the screen
     void render(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light) const {
         Point view_vector = vertices[0] - camera.position;
@@ -200,10 +208,10 @@ public:
 
 int main() {
     // test: a cube that you can rotate by mouse
-    sf::RenderWindow window(sf::VideoMode({800, 600}), "3D Cube Test");
+    sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "3D Cube Test");
     window.setFramerateLimit(60);
 
-    Camera camera({0.0f, 0.0f, -300.0f}, 0.0f, 0.0f, 0.0f, 400.0f, 800, 600);
+    Camera camera({0.0f, 0.0f, -300.0f}, 0.0f, 0.0f, 0.0f, 400.0f, WIDTH, HEIGHT);
     DirectedLight light(Point(0.25f, 0.25f, 1.0f).normalize(), sf::Color::White, 1.0f);
 
     // *insert epic gif of a guy making a cube in blender*
@@ -285,7 +293,11 @@ int main() {
         cube.push_back(Triangle(v3, v2, v6, sf::Color::Magenta));
         cube.push_back(Triangle(v3, v6, v7, sf::Color::Magenta));
 
+        // Painter's algorithm (yup I know Bob Ross draws faster)
         window.clear(sf::Color::Black);
+        std::sort(cube.begin(), cube.end(), [&camera](const Triangle& a, const Triangle& b) {
+            return a.average_depth(camera.position) > b.average_depth(camera.position);
+        });
         for (const auto& triangle : cube) {
             triangle.render(window, camera, light);
         }

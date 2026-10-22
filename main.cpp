@@ -311,7 +311,8 @@ int main() {
                     // Don't rotate the cube, but walk around it
                     // – Confucius
                     camera_yaw += delta_x * MOUSE_SENSIVITY;
-                    camera_pitch += -delta_y * MOUSE_SENSIVITY;
+                    float cos_yaw = std::cos(camera_yaw * TO_RAD);
+                    camera_pitch += -delta_y * MOUSE_SENSIVITY * (cos_yaw >= 0 ? 1.0f : -1.0f);
 
                     last_mouse_pos = current_mouse_pos;
                 }

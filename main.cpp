@@ -19,7 +19,7 @@
 #include <SFML/System.hpp>
 
 const float PI = 3.14159265f;
-const float MOUSE_SENSIVITY = 0.4f;
+const float MOUSE_SENSITIVITY = 0.4f;
 const float TO_RAD = PI / 180.0f;
 const int WIDTH = 800, HEIGHT = 600;
 
@@ -310,8 +310,8 @@ int main() {
 
                     // Don't rotate the cube, but walk around it
                     // – Confucius
-                    camera_yaw += delta_x * MOUSE_SENSIVITY;
-                    camera_pitch += -delta_y * MOUSE_SENSIVITY;
+                    camera_yaw += delta_x * MOUSE_SENSITIVITY;
+                    camera_pitch += -delta_y * MOUSE_SENSITIVITY;
 
                     last_mouse_pos = current_mouse_pos;
                 }

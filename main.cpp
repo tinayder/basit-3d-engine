@@ -13,7 +13,6 @@
 
 #include <vector>
 #include <algorithm>
-#include <cstdint>
 #include <cmath>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -175,6 +174,27 @@ public:
         return {final_r, final_g, final_b};
     }
 
+    // for a lot of lights
+    [[nodiscard]] sf::Color calculate_color(const std::vector<DirectedLight>& lights) const {
+        float total_r = 0.0f;
+        float total_g = 0.0f;
+        float total_b = 0.0f;
+
+        for (const auto& light : lights) {
+            float dot = normal * light.direction;
+            if (dot < 0.0f) dot = 0.0f;
+            float final_intensity = dot * light.intensity;
+            total_r += (float)this->color.r / 255.0f * ((float)light.color.r / 255.0f) * final_intensity;
+            total_g += (float)this->color.g / 255.0f * ((float)light.color.g / 255.0f) * final_intensity;
+            total_b += (float)this->color.b / 255.0f * ((float)light.color.b / 255.0f) * final_intensity;
+        }
+        std::uint8_t final_r = static_cast<std::uint8_t>(std::clamp(total_r * 255.0f, 0.0f, 255.0f));
+        std::uint8_t final_g = static_cast<std::uint8_t>(std::clamp(total_g * 255.0f, 0.0f, 255.0f));
+        std::uint8_t final_b = static_cast<std::uint8_t>(std::clamp(total_b * 255.0f, 0.0f, 255.0f));
+        return {final_r, final_g, final_b};
+    }
+
+
     // for Painter's algorithm
     [[nodiscard]] float average_depth(const Point& camera_position) const {
         Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
@@ -204,15 +224,47 @@ public:
         va[2].color = render_color;
         window.draw(va);
     }
+
+    // for a lot of lights
+    void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
+        Point view_vector = vertices[0] - camera.position;
+        float culling = normal * view_vector;
+        if (culling < 0.0f) return;
+        sf::Color render_color = calculate_color(lights);
+        sf::Vector2f p0 = camera.project(vertices[0]);
+        sf::Vector2f p1 = camera.project(vertices[1]);
+        sf::Vector2f p2 = camera.project(vertices[2]);
+        // checking if the point is not visible
+        if (p0 == sf::Vector2f(-1.0f, -1.0f) ||
+        p1 == sf::Vector2f(-1.0f, -1.0f) ||
+        p2 == sf::Vector2f(-1.0f, -1.0f)) return;
+        sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
+        va[0].position = p0;
+        va[1].position = p1;
+        va[2].position = p2;
+        va[0].color = render_color;
+        va[1].color = render_color;
+        va[2].color = render_color;
+        window.draw(va);
+    }
 };
 
 int main() {
     // test: a cube that you can rotate by mouse
+    // UPD: now you rotate the camera
     sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "3D Cube Test");
     window.setFramerateLimit(60);
 
-    Camera camera({0.0f, 0.0f, -300.0f}, 0.0f, 0.0f, 0.0f, 400.0f, WIDTH, HEIGHT);
-    DirectedLight light(Point(0.25f, 0.25f, 1.0f).normalize(), sf::Color::White, 1.0f);
+    float camera_yaw = 0.0f;
+    float camera_pitch = 0.0f;
+    float radius = 300.0f;
+    Point camera_pos(0.0f, 0.0f, -radius);
+    Camera camera(camera_pos, 0.0f, 0.0f, 0.0f, 400.0f, WIDTH, HEIGHT);
+    std::vector<DirectedLight> lights;
+
+    // two lights to don't see a shadow from the other side
+    lights.push_back(DirectedLight(Point(0.25f, 0.25f, 1.0f).normalize(), sf::Color::White, 1.0f));
+    lights.push_back(DirectedLight(Point(-0.25f, -0.25f, -1.0f).normalize(), sf::Color::White, 1.0f));
 
     // *insert epic gif of a guy making a cube in blender*
 
@@ -256,17 +308,10 @@ int main() {
                     float delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
                     float delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
 
-                    float rot_step_x = delta_y * MOUSE_SENSIVITY;
-                    float rot_step_y = -delta_x * MOUSE_SENSIVITY;
-
-                    v0 = v0.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v1 = v1.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v2 = v2.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v3 = v3.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v4 = v4.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v5 = v5.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v6 = v6.rotate(rot_step_x, rot_step_y, 0.0f);
-                    v7 = v7.rotate(rot_step_x, rot_step_y, 0.0f);
+                    // Don't rotate the cube, but walk around it
+                    // – Confucius
+                    camera_yaw += delta_x * MOUSE_SENSIVITY;
+                    camera_pitch += -delta_y * MOUSE_SENSIVITY;
 
                     last_mouse_pos = current_mouse_pos;
                 }
@@ -293,13 +338,20 @@ int main() {
         cube.push_back(Triangle(v3, v2, v6, sf::Color::Magenta));
         cube.push_back(Triangle(v3, v6, v7, sf::Color::Magenta));
 
+        // rotating the camera
+        Point yaw_only = camera_pos.rotate(0.0f, camera_yaw, 0.0f);
+        camera.position = yaw_only.rotate(camera_pitch, 0.0f, 0.0f);
+        camera.rot_x = camera_pitch;
+        camera.rot_y = camera_yaw;
+        camera.rot_z = 0.0f;
+
         // Painter's algorithm (yup I know Bob Ross draws faster)
         window.clear(sf::Color::Black);
         std::sort(cube.begin(), cube.end(), [&camera](const Triangle& a, const Triangle& b) {
             return a.average_depth(camera.position) > b.average_depth(camera.position);
         });
         for (const auto& triangle : cube) {
-            triangle.render(window, camera, light);
+            triangle.render(window, camera, lights);
         }
         window.display();
     }

@@ -1,0 +1,28 @@
+mtllib cube.mtl
+
+v -50.0 -50.0 -50.0
+v  50.0 -50.0 -50.0
+v  50.0  50.0 -50.0
+v -50.0  50.0 -50.0
+v -50.0 -50.0  50.0
+v  50.0 -50.0  50.0
+v  50.0  50.0  50.0
+v -50.0  50.0  50.0
+
+usemtl red
+f 1 4 3 2
+
+usemtl blue
+f 5 6 7 8
+
+usemtl yellow
+f 1 2 6 5
+
+usemtl green
+f 2 3 7 6
+
+usemtl cyan
+f 3 4 8 7
+
+usemtl magenta
+f 4 1 5 8

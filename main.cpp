@@ -14,6 +14,12 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <string>
+#include <map>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
@@ -27,6 +33,11 @@ const int WIDTH = 800, HEIGHT = 600;
 class Point {
 public:
     float x, y, z;
+    struct cos_and_sin {
+        float cx, sx;
+        float cy, sy;
+        float cz, sz;
+    };
 
     Point(float define_x, float define_y, float define_z) {
         this->x = define_x;
@@ -194,7 +205,6 @@ public:
         return {final_r, final_g, final_b};
     }
 
-
     // for Painter's algorithm
     [[nodiscard]] float average_depth(const Point& camera_position) const {
         Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
@@ -204,9 +214,6 @@ public:
 
     // render the triangle on the screen
     void render(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light) const {
-        Point view_vector = vertices[0] - camera.position;
-        float culling = normal * view_vector;
-        if (culling < 0.0f) return;
         sf::Color render_color = calculate_color(light);
         sf::Vector2f p0 = camera.project(vertices[0]);
         sf::Vector2f p1 = camera.project(vertices[1]);
@@ -227,9 +234,6 @@ public:
 
     // for a lot of lights
     void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
-        Point view_vector = vertices[0] - camera.position;
-        float culling = normal * view_vector;
-        if (culling < 0.0f) return;
         sf::Color render_color = calculate_color(lights);
         sf::Vector2f p0 = camera.project(vertices[0]);
         sf::Vector2f p1 = camera.project(vertices[1]);
@@ -246,6 +250,220 @@ public:
         va[1].color = render_color;
         va[2].color = render_color;
         window.draw(va);
+    }
+};
+
+// mesh
+class Mesh {
+private:
+    // mtl parser (only colors, our 3D engine is simple, remember?)
+    std::map<std::string, sf::Color> parse_mtl(const std::string& mtl_path) const  {
+        std::map<std::string, sf::Color> materials;
+        std::ifstream file(mtl_path);
+        if (!file.is_open()) {
+            std::cerr << "[Warning] Could not open .mtl file: " << mtl_path << std::endl;
+            return materials;
+        }
+
+        std::string line;
+        std::string current_material = "";
+
+        while (std::getline(file, line)) {
+            if (line.empty() || line[0] == '#') continue;
+
+            std::istringstream ss(line);
+            std::string type;
+            ss >> type;
+
+            if (type == "newmtl") {
+                ss >> current_material;
+            } else if (type == "Kd" && !current_material.empty()) {
+                float r, g, b;
+                ss >> r >> g >> b;
+
+                std::uint8_t color_r = static_cast<std::uint8_t>(std::clamp(r * 255.0f, 0.0f, 255.0f));
+                std::uint8_t color_g = static_cast<std::uint8_t>(std::clamp(g * 255.0f, 0.0f, 255.0f));
+                std::uint8_t color_b = static_cast<std::uint8_t>(std::clamp(b * 255.0f, 0.0f, 255.0f));
+
+                materials[current_material] = sf::Color(color_r, color_g, color_b);
+            }
+        }
+        return materials;
+    }
+public:
+    Point position = {0, 0, 0};
+    float rot_x = 0, rot_y = 0, rot_z = 0;
+    std::vector<Triangle> polygons;
+
+    Mesh(const Point& define_position, float define_rot_x, float define_rot_y, float define_rot_z, const std::vector<Triangle>& define_polygons) {
+        this->position = define_position;
+        this->rot_x = define_rot_x;
+        this->rot_y = define_rot_y;
+        this->rot_z = define_rot_z;
+        this->polygons = define_polygons;
+        for (Triangle& tr : this->polygons) {
+            for (Point& vertex : tr.vertices) {
+                vertex = vertex + this->position;
+                vertex = vertex.rotate(rot_x, rot_y, rot_z);
+            }
+        }
+    }
+
+    void rotate(float deg_x, float deg_y, float deg_z) {
+        rot_x += deg_x;
+        rot_y += deg_y;
+        rot_z += deg_z;
+        for (Triangle& tr : this->polygons) {
+            for (Point& vertex : tr.vertices) {
+                vertex = vertex.rotate(deg_x, deg_y, deg_z);
+            }
+            Point edge1 = tr.vertices[1] - tr.vertices[0];
+            Point edge2 = tr.vertices[2] - tr.vertices[0];
+            Point cross_product = edge1.cross_product(edge2);
+            tr.normal = cross_product.normalize();
+        }
+    }
+
+    void move(const Point& d) {
+        this->position = this->position + d;
+        for (Triangle& tr : this->polygons) {
+            for (Point& vertex : tr.vertices) {
+                vertex = vertex + d;
+            }
+            Point edge1 = tr.vertices[1] - tr.vertices[0];
+            Point edge2 = tr.vertices[2] - tr.vertices[0];
+            Point cross_product = edge1.cross_product(edge2);
+            tr.normal = cross_product.normalize();
+        }
+    }
+
+    // Painter's algorithm (yup I know Bob Ross draws faster)
+    void render(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light) const {
+        // some optimizations to don't calculate depths while sorting
+        struct tr_and_depth {
+            const Triangle* triangle;
+            float depth;
+        };
+
+        std::vector<tr_and_depth> sorted;
+        sorted.reserve(polygons.size());
+        for (const Triangle& tr : polygons) {
+            Point view_vector = tr.vertices[0] - camera.position;
+            float culling = tr.normal * view_vector;
+            if (culling >= 0.0f) {
+                float dist = tr.average_depth(camera.position);
+                sorted.push_back({&tr, dist});
+            }
+        }
+
+        std::sort(sorted.begin(), sorted.end(), [&camera](const tr_and_depth a, const tr_and_depth b) {
+            return a.depth > b.depth;
+        });
+        for (const tr_and_depth tr : sorted) {
+            tr.triangle->render(window, camera, light);
+        }
+    }
+
+    void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
+        std::vector<const Triangle*> sorted;
+        sorted.reserve(polygons.size());
+        for (const auto& tr : polygons) {
+            Point view_vector = tr.vertices[0] - camera.position;
+            float culling = tr.normal * view_vector;
+            if (culling >= 0.0f) {
+                sorted.push_back(&tr);
+            }
+        }
+        std::sort(sorted.begin(), sorted.end(), [&camera](const Triangle* a, const Triangle* b) {
+            return a->average_depth(camera.position) > b->average_depth(camera.position);
+        });
+        for (const Triangle* tr : sorted) {
+            tr->render(window, camera, lights);
+        }
+    }
+
+    // .obj parser (oh no...)
+    Mesh(const std::string& obj_path) {
+        std::ifstream file(obj_path);
+        // for situations when someone wants to play tricks on me
+        if (!file.is_open()) {
+            std::cerr << "[Error] Failed to open .obj file: " << obj_path << std::endl;
+            return;
+        }
+        std::vector<Point> vertices;
+        std::map<std::string, sf::Color> materials;
+        sf::Color current_color = sf::Color::White;
+        std::string line;
+        std::string mtl = "";
+
+        // first while: searching mtl file ans parse it
+        while (std::getline(file, line)) {
+            if (line.rfind("mtllib ", 0) == 0) {
+                std::istringstream ss(line);
+                std::string prefix;
+                ss >> prefix >> mtl;
+                std::string dir = "";
+                size_t pos = obj_path.find_last_of("/\\");
+                if (pos != std::string::npos) {
+                    dir = obj_path.substr(0, pos + 1);
+                }
+                materials = parse_mtl(dir + mtl);
+                break;
+            }
+        }
+
+        file.clear();
+        file.seekg(0, std::ios::beg);
+
+        // second while: PARSING
+        while (std::getline(file, line)) {
+            if (line.empty() || line[0] == '#') continue;
+            std::istringstream ss(line);
+            std::string type;
+            ss >> type;
+
+            if (type == "v") {
+                float x, y, z;
+                ss >> x >> y >> z;
+                vertices.push_back(Point(x, y, z));
+            } else if (type == "usemtl") {
+                std::string mat_name;
+                ss >> mat_name;
+                if (materials.find(mat_name) != materials.end()) {
+                    current_color = materials[mat_name];
+                }
+            } else if (type == "f") {
+                std::vector<int> face_indices;
+                std::string vertex_block;
+
+                while (ss >> vertex_block) {
+                    size_t slash_pos = vertex_block.find('/');
+                    std::string index_str = slash_pos == std::string::npos ? vertex_block : vertex_block.substr(0, slash_pos);
+                    int idx = std::stoi(index_str);
+                    if (idx < 0) {
+                        idx = static_cast<int>(vertices.size()) + idx + 1;
+                    }
+                    face_indices.push_back(idx);
+                }
+
+                for (size_t i = 1; i < face_indices.size() - 1; i++) {
+                    int idx0 = face_indices[0] - 1;
+                    int idx1 = face_indices[i] - 1;
+                    int idx2 = face_indices[i + 1] - 1;
+                    if (idx0 < vertices.size() &&
+                        idx1 < vertices.size() &&
+                        idx2 < vertices.size())
+                    {
+                        this->polygons.push_back(Triangle(
+                            vertices[idx0],
+                            vertices[idx2],
+                            vertices[idx1],
+                            current_color
+                        ));
+                    }
+                }
+            }
+        }
     }
 };
 
@@ -266,20 +484,16 @@ int main() {
     lights.push_back(DirectedLight(Point(0.25f, 0.25f, 1.0f).normalize(), sf::Color::White, 1.0f));
     lights.push_back(DirectedLight(Point(-0.25f, -0.25f, -1.0f).normalize(), sf::Color::White, 1.0f));
 
+    // some rain dancing for my CLion compiler
+    std::string path_str = std::filesystem::current_path().string();
+    size_t pos = path_str.find("cmake-build-debug");
+    std::string path = (pos != std::string::npos ? path_str.substr(0, pos) : path_str) + "models/cube.obj";
+
     // *insert epic gif of a guy making a cube in blender*
 
-    Point v0(-50.0f, -50.0f, -50.0f);
-    Point v1( 50.0f, -50.0f, -50.0f);
-    Point v2( 50.0f,  50.0f, -50.0f);
-    Point v3(-50.0f,  50.0f, -50.0f);
-    Point v4(-50.0f, -50.0f,  50.0f);
-    Point v5( 50.0f, -50.0f,  50.0f);
-    Point v6( 50.0f,  50.0f,  50.0f);
-    Point v7(-50.0f,  50.0f,  50.0f);
+    Mesh cube(path);
 
     // *the gif has ended*
-
-    std::vector<Triangle> cube;
 
     bool is_dragging = false;
     sf::Vector2i last_mouse_pos;
@@ -318,26 +532,6 @@ int main() {
             }
         }
 
-        cube.clear();
-
-        cube.push_back(Triangle(v0, v1, v2, sf::Color::Red));
-        cube.push_back(Triangle(v0, v2, v3, sf::Color::Red));
-
-        cube.push_back(Triangle(v5, v4, v7, sf::Color::Blue));
-        cube.push_back(Triangle(v5, v7, v6, sf::Color::Blue));
-
-        cube.push_back(Triangle(v4, v0, v3, sf::Color::Yellow));
-        cube.push_back(Triangle(v4, v3, v7, sf::Color::Yellow));
-
-        cube.push_back(Triangle(v1, v5, v6, sf::Color::Green));
-        cube.push_back(Triangle(v1, v6, v2, sf::Color::Green));
-
-        cube.push_back(Triangle(v4, v5, v1, sf::Color::Cyan));
-        cube.push_back(Triangle(v4, v1, v0, sf::Color::Cyan));
-
-        cube.push_back(Triangle(v3, v2, v6, sf::Color::Magenta));
-        cube.push_back(Triangle(v3, v6, v7, sf::Color::Magenta));
-
         // rotating the camera
         Point yaw_only = camera_pos.rotate(0.0f, camera_yaw, 0.0f);
         camera.position = yaw_only.rotate(camera_pitch, 0.0f, 0.0f);
@@ -345,14 +539,10 @@ int main() {
         camera.rot_y = camera_yaw;
         camera.rot_z = 0.0f;
 
-        // Painter's algorithm (yup I know Bob Ross draws faster)
         window.clear(sf::Color::Black);
-        std::sort(cube.begin(), cube.end(), [&camera](const Triangle& a, const Triangle& b) {
-            return a.average_depth(camera.position) > b.average_depth(camera.position);
-        });
-        for (const auto& triangle : cube) {
-            triangle.render(window, camera, lights);
-        }
+
+        cube.render(window, camera, lights);
+
         window.display();
     }
 

@@ -470,7 +470,7 @@ public:
 int main() {
     // test: a cube that you can rotate by mouse
     // UPD: now you rotate the camera
-    sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "3D Cube Test");
+    sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "3D Cube Test - Basit Engine");
     window.setFramerateLimit(60);
 
     float camera_yaw = 0.0f;

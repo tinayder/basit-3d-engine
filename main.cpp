@@ -468,10 +468,7 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "3D Cube Test - Basit Engine");
     window.setFramerateLimit(60);
 
-    float camera_yaw = 0.0f;
-    float camera_pitch = 0.0f;
-    float radius = 300.0f;
-    Point camera_pos(0.0f, 0.0f, -radius);
+    Point camera_pos(0.0f, 0.0f, -300.0f);
     Camera camera(camera_pos, 0.0f, 0.0f, 0.0f, 400.0f, WIDTH, HEIGHT);
     std::vector<DirectedLight> lights;
 
@@ -517,22 +514,14 @@ int main() {
                     float delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
                     float delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
 
-                    // Don't rotate the cube, but walk around it
+                    // Don't walk around the cube, just rotate it
                     // – Confucius
-                    camera_yaw += delta_x * MOUSE_SENSITIVITY;
-                    camera_pitch += -delta_y * MOUSE_SENSITIVITY;
+                    cube.rotate(delta_y * MOUSE_SENSITIVITY, -delta_x * MOUSE_SENSITIVITY, 0.0f);
 
                     last_mouse_pos = current_mouse_pos;
                 }
             }
         }
-
-        // rotating the camera
-        Point yaw_only = camera_pos.rotate(0.0f, camera_yaw, 0.0f);
-        camera.position = yaw_only.rotate(camera_pitch, 0.0f, 0.0f);
-        camera.rot_x = camera_pitch;
-        camera.rot_y = camera_yaw;
-        camera.rot_z = 0.0f;
 
         window.clear(sf::Color::Black);
 

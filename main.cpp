@@ -33,11 +33,6 @@ const int WIDTH = 800, HEIGHT = 600;
 class Point {
 public:
     float x, y, z;
-    struct cos_and_sin {
-        float cx, sx;
-        float cy, sy;
-        float cz, sz;
-    };
 
     Point(float define_x, float define_y, float define_z) {
         this->x = define_x;

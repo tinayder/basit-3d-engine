@@ -10,9 +10,27 @@ Some screenshots:
 <img width="912" height="744" alt="Снимок экрана — 2026-10-23 в 19 11 02" src="https://github.com/user-attachments/assets/f714ad48-c0d8-4879-a9c2-b7e075d18adb" />
 
 ## How to use this thing?
-It's as simple as the project. There is a test in the `main` function. Load your `.obj` file there – that's all.
+It's as simple as the project.
 
-btw you need SFML to run this thing.
+### `Point` class
+Standard 3D point/vector class. It has three variables: `float x`, `float y`, `float z`;
+
+You can add `Point` to other one, subtract them and do dot product. Also you can multiply `Point` by `float`.
+
+Methods:
+
+- `modulus()`: returns modulus (magnitude/length) of vector;
+- `normalize()`: returns normalized (unit) vector made from the original one;
+- `cross_product(const Point& other)`: returns cross product of two `Points`;
+- `rotate(float deg_x, float deg_y, float deg_z)`: return rotated `Point`; all angles must be in degrees!
+
+### `Camera` class
+
+### `DirectedLight` class
+
+### `Triangle` class
+
+### `Mesh` class
 
 ## Credits
 Everything is mine, except SFML – a library I used to do not write additional thousands lines of code.

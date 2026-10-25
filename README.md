@@ -10,7 +10,11 @@ Some screenshots:
 <img width="912" height="744" alt="Screenshot of Utah's Teapot rendered by Basit Engine" src="https://github.com/user-attachments/assets/f714ad48-c0d8-4879-a9c2-b7e075d18adb" />
 
 ## How to use this thing?
-It's as simple as the project.
+It's as simple as the project. Before working with Basit don't forget to include it:
+
+`#include "basit.hpp"`
+
+Namespace of the engine is `bst`. You can check `main.cpp` for example of code or read a little documentation below.
 
 ### `Point` class
 Standard 3D point/vector class. It has three variables: `float x`, `float y`, `float z`.
@@ -33,17 +37,17 @@ Code example:
 ```c++
 
 // initialization
-Point p(12.0f, 0.0f, 0.0f);
+bst::Point p(12.0f, 0.0f, 0.0f);
 
 // some operations with vector p
-Point q(1.0f, 2.0f, 0.0f);
-Point v1 = q + p;
+bst::Point q(1.0f, 2.0f, 0.0f);
+bst::Point v1 = q + p;
 std::cout << v1.x << std::endl; // 13
 
-Point v2 = q - p;
+bst::Point v2 = q - p;
 std::cout << v2.x << std::endl; // -11
 
-Point p3 = p * 3.0f;
+bst::Point p3 = p * 3.0f;
 std::cout << p3.x << std::endl; // 36
 
 float dot_product = p * q;
@@ -54,17 +58,17 @@ float magnitude = p.modulus();
 std::cout << "Magnitude of the vector: " << magnitude << std::endl; // Magnitude of the vector: 12
 
 // normalizing the vector
-Point normalized_p = p.normalize();
+bst::Point normalized_p = p.normalize();
 std::cout << normalized_p.x << std::endl; // 1
 
 // rotating the cube around Oy by 180 degrees
-Point rotated_p = p.rotate(0.0f, 180.0f, 0.0f);
+bst::Point rotated_p = p.rotate(0.0f, 180.0f, 0.0f);
 std::cout << rotated_p.x << std::endl; // -12
 
 // cross product of {1, 2, 3} and {4, 5, 6}
-Point a(1.0f, 2.0f, 3.0f);
-Point b(4.0f, 5.0f, 6.0f);
-Point c = a.cross_product(b);
+bst::Point a(1.0f, 2.0f, 3.0f);
+bst::Point b(4.0f, 5.0f, 6.0f);
+bst::Point c = a.cross_product(b);
 std::cout << c.z << std::endl; // -3
 ```
 

@@ -14,7 +14,7 @@ It's as simple as the project. Before working with Basit don't forget to include
 
 `#include "basit.hpp"`
 
-Namespace of the engine is `bst`.
+Namespace of the engine is `bst`. You can check `main.cpp` for example of code or read a little documentation below.
 
 ### `Point` class
 Standard 3D point/vector class. It has three variables: `float x`, `float y`, `float z`.

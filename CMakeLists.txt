@@ -3,7 +3,8 @@ project(basit)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(basit main.cpp
+add_executable(basit basit.hpp
+        main.cpp
 )
 include_directories(/usr/local/SFML-3.0.2/include)
 

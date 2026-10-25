@@ -1,14 +1,17 @@
 /*
- * 3D ENGINE
- *  ______      _______    _______    _______    _______
- * |      |    |       |  |  _____|  |__   __|  |__   __|  Alpha Version
- * |  [ ] |_   |  [ ]  |  |  |____      | |        | |
- * |        |  |   _   |  |____   |     | |        | |
- * |  [ ]   |  |  | |  |   ____|  |   __| |__      | |
- * |________|  |__| |__|  |_______|  |_______|     |_|
+ *  /$$$$$$$$$$$   /$$$$$$$$$$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$
+ * | $$$$ | $$$$  | $$$$  | $$$$ | $$$$_______/ |/__  $$$$___/ |/__  $$$$___/
+ * | $$$$ | $$$$  | $$$$  | $$$$ | $$$$             | $$$$         | $$$$
+ * | $$$$$$$$$$$$ | $$$$$$$$$$$$ | $$$$$$$$$$$$     | $$$$         | $$$$
+ * | $$$$  | $$$$ | $$$$  | $$$$ |/________$$$$     | $$$$         | $$$$
+ * | $$$$  | $$$$ | $$$$  | $$$$           $$$$     | $$$$         | $$$$
+ * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
+ * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * [ arab. basit – "simple" ]
- * (c) by tinayder
+ * Basit 3D Engine v1.0
+ * [ arabic: basit - "simple" ]
+ * (c) 2026 tinayder - MIT License
+ * https://github.com/tinayder/basit-3d-engine
  */
 
 #pragma once
@@ -106,7 +109,9 @@ namespace bst {
         float fov;
         int screen_width, screen_height;
 
-        Camera(const Point& define_position, float define_rot_x, float define_rot_y, float define_rot_z, float define_fov, int define_screen_width, int define_screen_height) {
+        Camera(const Point& define_position,
+            float define_rot_x, float define_rot_y, float define_rot_z,
+            float define_fov, int define_screen_width, int define_screen_height) {
             this->position = define_position;
             this->rot_x = define_rot_x;
             this->rot_y = define_rot_y;
@@ -289,7 +294,8 @@ namespace bst {
         float rot_x = 0, rot_y = 0, rot_z = 0;
         std::vector<Triangle> polygons;
 
-        Mesh(const Point& define_position, float define_rot_x, float define_rot_y, float define_rot_z, const std::vector<Triangle>& define_polygons) {
+        Mesh(const Point& define_position, float define_rot_x, float define_rot_y, float define_rot_z,
+            const std::vector<Triangle>& define_polygons) {
             this->position = define_position;
             this->rot_x = define_rot_x;
             this->rot_y = define_rot_y;

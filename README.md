@@ -10,7 +10,12 @@ Some screenshots:
 <img width="912" height="744" alt="Screenshot of Utah's Teapot rendered by Basit Engine" src="https://github.com/user-attachments/assets/f714ad48-c0d8-4879-a9c2-b7e075d18adb" />
 
 ## How to use this thing?
-It's as simple as the project. Before working with Basit don't forget to include it:
+It's as simple as the project. Before working with Basit, you must install SFML – Simple and Fast Multimedia Library (should be version 3.0.0 or newer), here are the links where you can download it:
+
+- https://www.sfml-dev.org/download/
+- https://github.com/SFML/SFML
+
+After that don't forget to include Basit itself:
 
 `#include "basit.hpp"`
 
@@ -24,7 +29,7 @@ Operations:
 - `Point operator+(const Point& other)`: returns component-wise sum of two `Points`;
 - `Point operator-(const Point& other)`: returns component-wise difference of two `Points`;
 - `float operator*(const Point& other)`: returns dot product of two `Points`;
-- `Point operator*(float k)`: returns original `Point` multiplied by a float value;
+- `Point operator*(float k)`: returns original `Point` multiplied by a float value.
 
 Methods:
 
@@ -73,6 +78,33 @@ std::cout << c.z << std::endl; // -3
 ```
 
 ### `Camera` class
+That's a class that projects `Points` onto a 2D canvas. It contains:
+
+Varibales:
+- `Point position`: position of the camera;
+- `float rot_x, float rot_y, float rot_z`: rotation of the camera (direction);
+- `float fov`: field of view;
+- `int screen_width, int screen_height`: width and height of the canvas.
+
+Methods:
+- `sf::Vector2f project(const Point& point)`: returns `x` and `y` coordinates of `Point's` projection; if the `Point` is behind the camera, it returns `{-1, -1}`; `{0, 0}` is center of the canvas.
+
+Code example:
+```c++
+// width and height of the canvas
+const int WIDTH = 800, HEIGHT = 600;
+
+// just a random point
+bst::Point p(10.0f, -10.0f, 100.0f);
+
+// creating the camera
+bst::Point camera_pos(0.0f, 0.0f, 50.0f);
+bst::Camera camera(camera_pos, 0.0f, 0.0f, 0.0f, 400.0f, WIDTH, HEIGHT);
+
+// projecting the camera
+sf::Vector2f prj = camera.project(point);
+std::cout << prj.x << ' ' << prj.y << std::endl; // 480 220
+```
 
 ### `DirectedLight` class
 
@@ -81,4 +113,4 @@ std::cout << c.z << std::endl; // -3
 ### `Mesh` class
 
 ## Credits
-Everything is mine, except SFML – a library I used to do not write additional thousands lines of code.
+Everything is mine, except SFML, of course =).

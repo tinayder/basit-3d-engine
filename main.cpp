@@ -20,7 +20,7 @@
 #include <filesystem>
 
 const int WIDTH = 800, HEIGHT = 600;
-const float MOUSE_SENSITIVITY = 0.4f;
+const float MOUSE_SENSITIVITY = 0.7f;
 
 int main() {
     // test: a cube that you can rotate by mouse
@@ -73,11 +73,9 @@ int main() {
                     float delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
                     float delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
 
-                    // Don't rotate the cube, just walk around it
+                    // Don't walk around the cube, just rotate it
                     // – Confucius
-                    camera.position = camera_pos * bst::Matrix::rotation_y(camera.rot_y + delta_x * MOUSE_SENSITIVITY * bst::TO_RAD) * bst::Matrix::rotation_x(camera.rot_x + delta_y * MOUSE_SENSITIVITY * bst::TO_RAD);
-                    camera.rot_x += delta_y * MOUSE_SENSITIVITY * bst::TO_RAD;
-                    camera.rot_y += delta_x * MOUSE_SENSITIVITY * bst::TO_RAD;
+                    cube.rotate(delta_y * MOUSE_SENSITIVITY, delta_x * MOUSE_SENSITIVITY, 0.0f);
 
                     last_mouse_pos = current_mouse_pos;
                 }

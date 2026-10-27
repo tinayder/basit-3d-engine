@@ -108,13 +108,12 @@ namespace bst {
         // matrix of projection (help)
         static Matrix projection(float fov, float aspect, float near, float far) {
             float fov_scale = 1.0f / std::tan(fov / 2.0f);
-            Matrix result;
-            result.m[0] = fov_scale / aspect;
-            result.m[5] = fov_scale;
-            result.m[10] = -(far + near) / (far - near);
-            result.m[11] = -(2.0f * far * near) / (far - near);
-            result.m[14] = 1.0f;
-            return result;
+            return Matrix{
+                fov_scale / aspect, 0, 0, 0,
+                0, fov_scale, 0, 0,
+                0, 0, -(far + near) / (far - near), -(2.0f * far * near) / (far - near),
+                0, 0, 1, 0
+            };
         }
 
         [[nodiscard]] Matrix operator*(const Matrix& other) const {
@@ -194,7 +193,7 @@ namespace bst {
     public:
         Point position;
         float rot_x, rot_y, rot_z;
-        float fov_deg, near, far;
+        float fov, near, far;
         int screen_width, screen_height;
         float aspect;
         Matrix projection;
@@ -207,13 +206,13 @@ namespace bst {
             this->rot_x = define_rot_x;
             this->rot_y = define_rot_y;
             this->rot_z = define_rot_z;
-            this->fov_deg = define_fov * TO_RAD;
+            this->fov = define_fov * TO_RAD;
             this->screen_width = define_screen_width;
             this->screen_height = define_screen_height;
             this->near = define_near;
             this->far = define_far;
             this->aspect = static_cast<float>(this->screen_width) / static_cast<float>(this->screen_height);
-            this->projection = Matrix::projection(this->fov_deg, this->aspect, this->near, this->far);
+            this->projection = Matrix::projection(this->fov, this->aspect, this->near, this->far);
         }
 
         [[nodiscard]] sf::Vector2f project(const Point& point) const {
@@ -326,6 +325,7 @@ namespace bst {
             float dot_product = this->normal * view;
             if (dot_product > 0.0f) return;
 
+            // rendering
             sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
             va[0].position = p0;
             va[1].position = p1;
@@ -353,6 +353,7 @@ namespace bst {
             float dot_product = this->normal * view;
             if (dot_product > 0.0f) return;
 
+            // rendering
             sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
             va[0].position = p0;
             va[1].position = p1;
@@ -422,6 +423,7 @@ namespace bst {
             }
         }
 
+        // must be in degrees!
         void rotate(float drx, float dry, float drz) {
             rot_x += drx;
             rot_y += dry;

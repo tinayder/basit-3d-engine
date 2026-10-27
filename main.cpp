@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.5 – Code Example
+ * Basit 3D Engine v1.5.1 – Code Example
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -70,8 +70,8 @@ int main() {
             if (event->is<sf::Event::MouseMoved>()) {
                 if (is_dragging) {
                     sf::Vector2i current_mouse_pos = sf::Mouse::getPosition(window);
-                    float delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
-                    float delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
+                    auto delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
+                    auto delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
 
                     // Don't walk around the cube, just rotate it
                     // – Confucius

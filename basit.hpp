@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.5
+ * Basit 3D Engine v1.5.1
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -272,9 +272,9 @@ namespace bst {
             float dot = normal * light.direction;
             if (dot < 0.0f) dot = 0.0f;
             float final_intensity = dot * light.intensity;
-            float r = (float)this->color.r / 255.0f * ((float)light.color.r / 255.0f) * final_intensity * 255.0f;
-            float g = (float)this->color.g / 255.0f * ((float)light.color.g / 255.0f) * final_intensity * 255.0f;
-            float b = (float)this->color.b / 255.0f * ((float)light.color.b / 255.0f) * final_intensity * 255.0f;
+            float r = static_cast<float>(light.color.r) / 255.0f * (static_cast<float>(light.color.r) / 255.0f) * final_intensity * 255.0f;
+            float g = static_cast<float>(light.color.g) / 255.0f * (static_cast<float>(light.color.g) / 255.0f) * final_intensity * 255.0f;
+            float b = static_cast<float>(light.color.b) / 255.0f * (static_cast<float>(light.color.b) / 255.0f) * final_intensity * 255.0f;
             std::uint8_t final_r = static_cast<std::uint8_t>(std::clamp(r, 0.0f, 255.0f));
             std::uint8_t final_g = static_cast<std::uint8_t>(std::clamp(g, 0.0f, 255.0f));
             std::uint8_t final_b = static_cast<std::uint8_t>(std::clamp(b, 0.0f, 255.0f));
@@ -291,9 +291,9 @@ namespace bst {
                 float dot = normal * light.direction;
                 if (dot < 0.0f) dot = 0.0f;
                 float final_intensity = dot * light.intensity;
-                total_r += (float)this->color.r / 255.0f * ((float)light.color.r / 255.0f) * final_intensity;
-                total_g += (float)this->color.g / 255.0f * ((float)light.color.g / 255.0f) * final_intensity;
-                total_b += (float)this->color.b / 255.0f * ((float)light.color.b / 255.0f) * final_intensity;
+                total_r += static_cast<float>(light.color.r) / 255.0f * (static_cast<float>(light.color.r) / 255.0f) * final_intensity * 255.0f;
+                total_g += static_cast<float>(light.color.g) / 255.0f * (static_cast<float>(light.color.g) / 255.0f) * final_intensity * 255.0f;
+                total_b += static_cast<float>(light.color.b) / 255.0f * (static_cast<float>(light.color.b) / 255.0f) * final_intensity * 255.0f;
             }
             std::uint8_t final_r = static_cast<std::uint8_t>(std::clamp(total_r * 255.0f, 0.0f, 255.0f));
             std::uint8_t final_g = static_cast<std::uint8_t>(std::clamp(total_g * 255.0f, 0.0f, 255.0f));
@@ -378,7 +378,7 @@ namespace bst {
             }
 
             std::string line;
-            std::string current_material = "";
+            std::string current_material;
 
             while (std::getline(file, line)) {
                 if (line.empty() || line[0] == '#') continue;
@@ -509,7 +509,7 @@ namespace bst {
         }
 
         // .obj parser (oh no...)
-        Mesh(const std::string& obj_path) {
+        explicit Mesh(const std::string& obj_path) {
             std::ifstream file(obj_path);
             // for situations when someone wants to play tricks on me
             if (!file.is_open()) {
@@ -520,7 +520,7 @@ namespace bst {
             std::map<std::string, sf::Color> materials;
             sf::Color current_color = sf::Color::White;
             std::string line;
-            std::string mtl = "";
+            std::string mtl;
 
             // first while: searching mtl file ans parse it
             while (std::getline(file, line)) {
@@ -528,7 +528,7 @@ namespace bst {
                     std::istringstream ss(line);
                     std::string prefix;
                     ss >> prefix >> mtl;
-                    std::string dir = "";
+                    std::string dir;
                     size_t pos = obj_path.find_last_of("/\\");
                     if (pos != std::string::npos) {
                         dir = obj_path.substr(0, pos + 1);

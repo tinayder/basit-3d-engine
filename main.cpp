@@ -73,9 +73,11 @@ int main() {
                     float delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
                     float delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
 
-                    // Don't walk around the cube, just rotate it
+                    // Don't rotate the cube, just walk around it
                     // – Confucius
-                    cube.rotate(delta_y * MOUSE_SENSITIVITY, delta_x * MOUSE_SENSITIVITY, 0.0f);
+                    camera.position = camera_pos * bst::Matrix::rotation_y(camera.rot_y + delta_x * MOUSE_SENSITIVITY * bst::TO_RAD) * bst::Matrix::rotation_x(camera.rot_x + delta_y * MOUSE_SENSITIVITY * bst::TO_RAD);
+                    camera.rot_x += delta_y * MOUSE_SENSITIVITY * bst::TO_RAD;
+                    camera.rot_y += delta_x * MOUSE_SENSITIVITY * bst::TO_RAD;
 
                     last_mouse_pos = current_mouse_pos;
                 }

@@ -405,6 +405,7 @@ namespace bst {
     public:
         Point position = {0, 0, 0};
         float rot_x = 0, rot_y = 0, rot_z = 0;
+        float scale_x = 1.0f, scale_y = 1.0f, scale_z = 1.0f;
         std::vector<Triangle> polygons;
 
         Mesh(const Point& define_position, float define_rot_x, float define_rot_y, float define_rot_z,
@@ -447,6 +448,18 @@ namespace bst {
             for (Triangle& tr : this->polygons) {
                 for (Point& vertex : tr.vertices) {
                     vertex = vertex + d;
+                }
+            }
+        }
+
+        void scale(float sx, float sy, float sz) {
+            this->scale_x = sx;
+            this->scale_y = sy;
+            this->scale_z = sz;
+            Matrix sc = Matrix::scale(sx, sy, sz);
+            for (Triangle& tr : this->polygons) {
+                for (Point& vertex : tr.vertices) {
+                    vertex = vertex * sc;
                 }
             }
         }

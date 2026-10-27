@@ -11,8 +11,8 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({WIDTH, HEIGHT}), "3D Cube Test - Basit Engine");
     window.setFramerateLimit(60);
 
-    bst::Point camera_pos(0.0f, 0.0f, -300.0f);
-    bst::Camera camera(camera_pos, 0.0f, 0.0f, 0.0f, 400.0f, WIDTH, HEIGHT);
+    bst::Point camera_pos(0.0f, 0.0f, 300.0f);
+    bst::Camera camera(camera_pos, 0.0f, 0.0f, 0.0f, 0.1f, 500.0f, 50.0f, WIDTH, HEIGHT);
     std::vector<bst::DirectedLight> lights;
 
     // two lights to don't see a shadow from the other side
@@ -59,7 +59,7 @@ int main() {
 
                     // Don't walk around the cube, just rotate it
                     // – Confucius
-                    cube.rotate(delta_y * MOUSE_SENSITIVITY, -delta_x * MOUSE_SENSITIVITY, 0.0f);
+                    cube.rotate(delta_y * MOUSE_SENSITIVITY, delta_x * MOUSE_SENSITIVITY, 0.0f);
 
                     last_mouse_pos = current_mouse_pos;
                 }

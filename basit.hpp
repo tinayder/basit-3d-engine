@@ -31,6 +31,105 @@ namespace bst {
     inline const float PI = 3.14159265f;
     inline const float TO_RAD = PI / 180.0f;
 
+    // AAAAGH
+    class Matrix {
+    public:
+        float m[16] {
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+        };
+
+        // identity matrix
+        static Matrix identity() {
+            return Matrix{
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            };
+        }
+
+        // matrix for moving the points
+        static Matrix translation(float dx, float dy, float dz) {
+            return Matrix{
+                1, 0, 0, dx,
+                0, 1, 0, dy,
+                0, 0, 1, dz,
+                0, 0, 0, 1
+            };
+        }
+
+        // matrix for scaling the points
+        static Matrix scale(float sx, float sy, float sz) {
+            return Matrix{
+                sx, 0, 0, 0,
+                0, sy, 0, 0,
+                0, 0, sz, 0,
+                0, 0, 0, 1
+            };
+        }
+
+        // matrices for rotating the points
+        // x
+        static Matrix rotation_x(float rot) {
+            float cos = std::cos(rot), sin = std::sin(rot);
+            return Matrix{
+                1, 0, 0, 0,
+                0, cos, -sin, 0,
+                0, sin, cos, 0,
+                0, 0, 0, 1
+            };
+        }
+
+        // y
+        static Matrix rotation_y(float rot) {
+            float cos = std::cos(rot), sin = std::sin(rot);
+            return Matrix{
+                cos, 0, sin, 0,
+                0, 1, 0, 0,
+                -sin, 0, cos, 0,
+                0, 0, 0, 1
+            };
+        }
+
+        // and z
+        static Matrix rotation_z(float rot) {
+            float cos = std::cos(rot), sin = std::sin(rot);
+            return Matrix{
+                cos, -sin, 0, 0,
+                sin, cos, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            };
+        }
+
+        // matrix of projection (help)
+        static Matrix projection(float fov, float aspect, float near, float far) {
+            float fov_scale = 1.0f / std::tan(fov / 2.0f);
+            Matrix result;
+            result.m[0] = fov_scale / aspect;
+            result.m[5] = fov_scale;
+            result.m[10] = -(far + near) / (far - near);
+            result.m[11] = -(2.0f * far * near) / (far - near);
+            result.m[14] = 1.0f;
+            return result;
+        }
+
+        [[nodiscard]] Matrix operator*(const Matrix& other) const {
+            Matrix result;
+            for (size_t i = 0; i < 4; i++) {
+                for (size_t j = 0; j < 4; j++) {
+                    for (size_t k = 0; k < 4; k++) {
+                        result.m[4 * i + j] += this->m[4 * i + k] * other.m[4 * k + j];
+                    }
+                }
+            }
+            return result;
+        }
+    };
+
     // 3D point/vector
     class Point {
     public:
@@ -79,61 +178,60 @@ namespace bst {
             return {this->x / modulus, this->y / modulus, this->z / modulus};
         }
 
-        // input parameters must be in degrees only
-        [[nodiscard]] Point rotate(float deg_x, float deg_y, float deg_z) const {
-            // converting to radians
-            float rad_x = deg_x * TO_RAD;
-            float rad_y = deg_y * TO_RAD;
-            float rad_z = deg_z * TO_RAD;
-            // x-rotation
-            float x1 = this->x;
-            float y1 = this->y * std::cos(rad_x) - this->z * std::sin(rad_x);
-            float z1 = this->y * std::sin(rad_x) + this->z * std::cos(rad_x);
-            // y-rotation
-            float x2 = x1 * std::cos(rad_y) + z1 * std::sin(rad_y);
-            float y2 = y1;
-            float z2 = z1 * std::cos(rad_y) - x1 * std::sin(rad_y);
-            // z-rotation
-            float x3 = x2 * std::cos(rad_z) - y2 * std::sin(rad_z);
-            float y3 = x2 * std::sin(rad_z) + y2 * std::cos(rad_z);
-            float z3 = z2;
-            return {x3, y3, z3};
+        [[nodiscard]] Point operator*(const Matrix& mat) const {
+            float rx = mat.m[0] * this->x + mat.m[1] * this->y + mat.m[2] * this->z + mat.m[3];
+            float ry = mat.m[4] * this->x + mat.m[5] * this->y + mat.m[6] * this->z + mat.m[7];
+            float rz = mat.m[8] * this->x + mat.m[9] * this->y + mat.m[10] * this->z + mat.m[11];
+            float rw = mat.m[12] * this->x + mat.m[13] * this->y + mat.m[14] * this->z + mat.m[15];
+            // making ndc here hehehehe
+            if (std::abs(rw) > 0.000001f) return {rx / rw, ry / rw, rz / rw};
+            return {rx, ry, rz};
         }
     };
 
-    // camera
+    // camera (fov is in degrees!)
     class Camera {
     public:
         Point position;
         float rot_x, rot_y, rot_z;
-        float fov;
+        float fov_deg, near, far;
         int screen_width, screen_height;
+        float aspect;
+        Matrix projection;
 
         Camera(const Point& define_position,
             float define_rot_x, float define_rot_y, float define_rot_z,
+            float define_near, float define_far,
             float define_fov, int define_screen_width, int define_screen_height) {
             this->position = define_position;
             this->rot_x = define_rot_x;
             this->rot_y = define_rot_y;
             this->rot_z = define_rot_z;
-            this->fov = define_fov;
+            this->fov_deg = define_fov * TO_RAD;
             this->screen_width = define_screen_width;
             this->screen_height = define_screen_height;
+            this->near = define_near;
+            this->far = define_far;
+            this->aspect = static_cast<float>(this->screen_width) / static_cast<float>(this->screen_height);
+            this->projection = Matrix::projection(this->fov_deg, this->aspect, this->near, this->far);
         }
 
         [[nodiscard]] sf::Vector2f project(const Point& point) const {
             Point local = point - this->position;
-            Point rotated = local.rotate(-rot_x, -rot_y, -rot_z);
-            // if the point is behind the camera, we don't need it
-            if (rotated.z <= 0) return {-1, -1};
-            float prx = rotated.x, pry = rotated.y;
-            prx /= rotated.z;
-            pry /= rotated.z;
-            prx *= fov;
-            pry *= fov;
-            // add half of screen parameters to make (0, 0) in the center
-            prx += (float)screen_width / 2.0f;
-            pry += (float)screen_height / 2.0f;
+
+            Matrix mr = Matrix::rotation_z(rot_z * TO_RAD) * Matrix::rotation_y(rot_y * TO_RAD) * Matrix::rotation_x(rot_x * TO_RAD);
+            Point final_point = local * mr;
+            final_point.z *= -1.0f;
+
+            if (final_point.z <= near || final_point.z >= far) {
+                return {-1.0f, -1.0f};
+            }
+
+            // projecting
+            Point ndc = final_point * projection;
+
+            float prx = (ndc.x + 1.0f) * 0.5f * static_cast<float>(this->screen_width);
+            float pry = (1.0f - ndc.y) * 0.5f * static_cast<float>(this->screen_height);
             return {prx, pry};
         }
     };
@@ -221,6 +319,13 @@ namespace bst {
             if (p0 == sf::Vector2f(-1.0f, -1.0f) ||
             p1 == sf::Vector2f(-1.0f, -1.0f) ||
             p2 == sf::Vector2f(-1.0f, -1.0f)) return;
+
+            // culling
+            Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
+            Point view = (center - camera.position).normalize();
+            float dot_product = this->normal * view;
+            if (dot_product > 0.0f) return;
+
             sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
             va[0].position = p0;
             va[1].position = p1;
@@ -241,6 +346,13 @@ namespace bst {
             if (p0 == sf::Vector2f(-1.0f, -1.0f) ||
             p1 == sf::Vector2f(-1.0f, -1.0f) ||
             p2 == sf::Vector2f(-1.0f, -1.0f)) return;
+
+            // culling
+            Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
+            Point view = (center - camera.position).normalize();
+            float dot_product = this->normal * view;
+            if (dot_product > 0.0f) return;
+
             sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
             va[0].position = p0;
             va[1].position = p1;
@@ -301,21 +413,25 @@ namespace bst {
             this->rot_y = define_rot_y;
             this->rot_z = define_rot_z;
             this->polygons = define_polygons;
+            Matrix mr = Matrix::rotation_z(rot_z * TO_RAD) * Matrix::rotation_y(rot_y * TO_RAD) * Matrix::rotation_x(rot_x * TO_RAD);
             for (Triangle& tr : this->polygons) {
                 for (Point& vertex : tr.vertices) {
+                    vertex = vertex * mr;
                     vertex = vertex + this->position;
-                    vertex = vertex.rotate(rot_x, rot_y, rot_z);
                 }
             }
         }
 
-        void rotate(float deg_x, float deg_y, float deg_z) {
-            rot_x += deg_x;
-            rot_y += deg_y;
-            rot_z += deg_z;
+        void rotate(float drx, float dry, float drz) {
+            rot_x += drx;
+            rot_y += dry;
+            rot_z += drz;
+            Matrix mr = Matrix::rotation_z(drz * TO_RAD) * Matrix::rotation_y(dry * TO_RAD) * Matrix::rotation_x(drx * TO_RAD);
             for (Triangle& tr : this->polygons) {
                 for (Point& vertex : tr.vertices) {
-                    vertex = vertex.rotate(deg_x, deg_y, deg_z);
+                    Point local = vertex - this->position;
+                    vertex = local * mr;
+                    vertex = vertex + this->position;
                 }
                 Point edge1 = tr.vertices[1] - tr.vertices[0];
                 Point edge2 = tr.vertices[2] - tr.vertices[0];
@@ -330,10 +446,6 @@ namespace bst {
                 for (Point& vertex : tr.vertices) {
                     vertex = vertex + d;
                 }
-                Point edge1 = tr.vertices[1] - tr.vertices[0];
-                Point edge2 = tr.vertices[2] - tr.vertices[0];
-                Point cross_product = edge1.cross_product(edge2);
-                tr.normal = cross_product.normalize();
             }
         }
 
@@ -348,15 +460,11 @@ namespace bst {
             std::vector<tr_and_depth> sorted;
             sorted.reserve(polygons.size());
             for (const Triangle& tr : polygons) {
-                Point view_vector = tr.vertices[0] - camera.position;
-                float culling = tr.normal * view_vector;
-                if (culling >= 0.0f) {
-                    float dist = tr.average_depth(camera.position);
-                    sorted.push_back({&tr, dist});
-                }
+                float dist = tr.average_depth(camera.position);
+                sorted.push_back({&tr, dist});
             }
 
-            std::sort(sorted.begin(), sorted.end(), [&camera](const tr_and_depth a, const tr_and_depth b) {
+            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth a, const tr_and_depth b) {
                 return a.depth > b.depth;
             });
             for (const tr_and_depth tr : sorted) {
@@ -365,20 +473,23 @@ namespace bst {
         }
 
         void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
-            std::vector<const Triangle*> sorted;
+            struct tr_and_depth {
+                const Triangle* triangle;
+                float depth;
+            };
+
+            std::vector<tr_and_depth> sorted;
             sorted.reserve(polygons.size());
-            for (const auto& tr : polygons) {
-                Point view_vector = tr.vertices[0] - camera.position;
-                float culling = tr.normal * view_vector;
-                if (culling >= 0.0f) {
-                    sorted.push_back(&tr);
-                }
+            for (const Triangle& tr : polygons) {
+                float dist = tr.average_depth(camera.position);
+                sorted.push_back({&tr, dist});
             }
-            std::sort(sorted.begin(), sorted.end(), [&camera](const Triangle* a, const Triangle* b) {
-                return a->average_depth(camera.position) > b->average_depth(camera.position);
+
+            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth a, const tr_and_depth b) {
+                return a.depth > b.depth;
             });
-            for (const Triangle* tr : sorted) {
-                tr->render(window, camera, lights);
+            for (const tr_and_depth tr : sorted) {
+                tr.triangle->render(window, camera, lights);
             }
         }
 
@@ -456,8 +567,8 @@ namespace bst {
                         {
                             this->polygons.push_back(Triangle(
                                 vertices[idx0],
-                                vertices[idx2],
                                 vertices[idx1],
+                                vertices[idx2],
                                 current_color
                             ));
                         }
@@ -466,4 +577,4 @@ namespace bst {
             }
         }
     };
-}
+} // namespace bst

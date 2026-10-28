@@ -5,9 +5,10 @@ This engine can draw 3D objects and parse `.obj` files. It uses flat shading, cu
 
 Some screenshots:
 
-<img width="912" height="744" alt="Screenshot of a cube rendered by Basit Engine" src="https://github.com/user-attachments/assets/ed09f383-e44a-4461-a0ac-7e0a13d2f705" />
+<img width="912" height="744" alt="Screenshot of 3D Cube rendered by Basit Engine" src="https://github.com/user-attachments/assets/71d82d07-6005-415f-b1bc-704e6fff193b" />
 
-<img width="912" height="744" alt="Screenshot of Utah's Teapot rendered by Basit Engine" src="https://github.com/user-attachments/assets/f714ad48-c0d8-4879-a9c2-b7e075d18adb" />
+<img width="912" height="744" alt="Screenshot of Utah's Teapot rendered by Basit Engine" src="https://github.com/user-attachments/assets/7f0abaf2-bab1-41f9-b06f-6868a1903a73" />
+
 
 ## How to use this thing?
 It's as simple as the project. Before working with Basit, you must install SFML – Simple and Fast Multimedia Library (should be version 3.0.0 or newer), here are the links where you can download it:

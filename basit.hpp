@@ -16,6 +16,12 @@
 
 #pragma once
 
+#define BASIT_VERSION_MAJOR 1
+#define BASIT_VERSION_MINOR 5
+#define BASIT_VERSION_PATCH 5
+#define BASIT_VERSION "1.5.5"
+#define BASIT_VERSION_HEX ((BASIT_VERSION_MAJOR << 16) | (BASIT_VERSION_MINOR << 8) | BASIT_VERSION_PATCH)
+
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -28,8 +34,8 @@
 #include <SFML/System.hpp>
 
 namespace bst {
-    inline const float PI = 3.14159265f;
-    inline const float TO_RAD = PI / 180.0f;
+    inline constexpr float PI = 3.14159265f;
+    inline constexpr float TO_RAD = PI / 180.0f;
 
     // AAAAGH
     class Matrix {

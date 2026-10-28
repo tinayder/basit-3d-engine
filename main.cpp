@@ -32,7 +32,7 @@ int main() {
     bst::Camera camera(camera_pos, 0.0f, 0.0f, 0.0f, 0.1f, 500.0f, 50.0f, WIDTH, HEIGHT);
     std::vector<bst::DirectedLight> lights;
 
-    // two lights to don't see a shadow from the other side
+    // two lights to don't see a shadow from the other side (no longer needed but I'll keep it here)
     lights.push_back(bst::DirectedLight(bst::Point(0.25f, 0.25f, 1.0f).normalize(), sf::Color::White, 1.0f));
     lights.push_back(bst::DirectedLight(bst::Point(-0.25f, -0.25f, -1.0f).normalize(), sf::Color::White, 1.0f));
 

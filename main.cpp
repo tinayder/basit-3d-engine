@@ -96,7 +96,11 @@ int main() {
 
                     // Don't walk around the cube, just rotate it
                     // – Confucius
+                    bst::Point d = cube.position;
+                    // moving the cube in the center, rotate it and return it to his origin to rotate it around itself
+                    cube.move({-d.x, -d.y, -d.z});
                     cube.rotate(delta_y * MOUSE_SENSITIVITY, delta_x * MOUSE_SENSITIVITY, 0.0f);
+                    cube.move(d);
 
                     last_mouse_pos = current_mouse_pos;
                 }

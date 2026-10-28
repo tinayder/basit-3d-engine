@@ -269,12 +269,20 @@ namespace bst {
 
         // for light
         [[nodiscard]] sf::Color calculate_color(const DirectedLight& light) const {
+            // color of the triangle
+            float base_color_r = static_cast<float>(this->color.r) / 255.0f;
+            float base_color_g = static_cast<float>(this->color.g) / 255.0f;
+            float base_color_b = static_cast<float>(this->color.b) / 255.0f;
+
             float dot = normal * light.direction;
             if (dot < 0.0f) dot = 0.0f;
             float final_intensity = dot * light.intensity;
-            float r = static_cast<float>(light.color.r) / 255.0f * (static_cast<float>(light.color.r) / 255.0f) * final_intensity * 255.0f;
-            float g = static_cast<float>(light.color.g) / 255.0f * (static_cast<float>(light.color.g) / 255.0f) * final_intensity * 255.0f;
-            float b = static_cast<float>(light.color.b) / 255.0f * (static_cast<float>(light.color.b) / 255.0f) * final_intensity * 255.0f;
+            float r = static_cast<float>(light.color.r) / 255.0f;
+            float g = static_cast<float>(light.color.g) / 255.0f;
+            float b = static_cast<float>(light.color.b) / 255.0f;
+            r = r * r * final_intensity * base_color_r;
+            g = g * g * final_intensity * base_color_g;
+            b = b * b * final_intensity * base_color_b;
             std::uint8_t final_r = static_cast<std::uint8_t>(std::clamp(r, 0.0f, 255.0f));
             std::uint8_t final_g = static_cast<std::uint8_t>(std::clamp(g, 0.0f, 255.0f));
             std::uint8_t final_b = static_cast<std::uint8_t>(std::clamp(b, 0.0f, 255.0f));
@@ -283,6 +291,11 @@ namespace bst {
 
         // for a lot of lights
         [[nodiscard]] sf::Color calculate_color(const std::vector<DirectedLight>& lights) const {
+            // color of the triangle
+            float base_color_r = static_cast<float>(this->color.r) / 255.0f;
+            float base_color_g = static_cast<float>(this->color.g) / 255.0f;
+            float base_color_b = static_cast<float>(this->color.b) / 255.0f;
+
             float total_r = 0.0f;
             float total_g = 0.0f;
             float total_b = 0.0f;
@@ -291,9 +304,12 @@ namespace bst {
                 float dot = normal * light.direction;
                 if (dot < 0.0f) dot = 0.0f;
                 float final_intensity = dot * light.intensity;
-                total_r += static_cast<float>(light.color.r) / 255.0f * (static_cast<float>(light.color.r) / 255.0f) * final_intensity * 255.0f;
-                total_g += static_cast<float>(light.color.g) / 255.0f * (static_cast<float>(light.color.g) / 255.0f) * final_intensity * 255.0f;
-                total_b += static_cast<float>(light.color.b) / 255.0f * (static_cast<float>(light.color.b) / 255.0f) * final_intensity * 255.0f;
+                float r = static_cast<float>(light.color.r) / 255.0f;
+                float g = static_cast<float>(light.color.g) / 255.0f;
+                float b = static_cast<float>(light.color.b) / 255.0f;
+                total_r += r * r * final_intensity * base_color_r;
+                total_g += g * g * final_intensity * base_color_g;
+                total_b += b * b * final_intensity * base_color_b;
             }
             std::uint8_t final_r = static_cast<std::uint8_t>(std::clamp(total_r * 255.0f, 0.0f, 255.0f));
             std::uint8_t final_g = static_cast<std::uint8_t>(std::clamp(total_g * 255.0f, 0.0f, 255.0f));
@@ -308,9 +324,8 @@ namespace bst {
             return result;
         }
 
-        // render the triangle on the screen
-        void render(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light) const {
-            sf::Color render_color = calculate_color(light);
+        // appends vertices of the triangle to the buffer
+        void append_to_buffer(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light, sf::VertexArray& buffer) const {
             sf::Vector2f p0 = camera.project(vertices[0]);
             sf::Vector2f p1 = camera.project(vertices[1]);
             sf::Vector2f p2 = camera.project(vertices[2]);
@@ -325,20 +340,16 @@ namespace bst {
             float dot_product = this->normal * view;
             if (dot_product > 0.0f) return;
 
-            // rendering
-            sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
-            va[0].position = p0;
-            va[1].position = p1;
-            va[2].position = p2;
-            va[0].color = render_color;
-            va[1].color = render_color;
-            va[2].color = render_color;
-            window.draw(va);
+            sf::Color render_color = calculate_color(light);
+
+            // appending
+            buffer.append(sf::Vertex(p0, render_color));
+            buffer.append(sf::Vertex(p1, render_color));
+            buffer.append(sf::Vertex(p2, render_color));
         }
 
         // for a lot of lights
-        void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
-            sf::Color render_color = calculate_color(lights);
+        void append_to_buffer(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights, sf::VertexArray& buffer) const {
             sf::Vector2f p0 = camera.project(vertices[0]);
             sf::Vector2f p1 = camera.project(vertices[1]);
             sf::Vector2f p2 = camera.project(vertices[2]);
@@ -350,18 +361,16 @@ namespace bst {
             // culling
             Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
             Point view = (center - camera.position).normalize();
+
             float dot_product = this->normal * view;
             if (dot_product > 0.0f) return;
 
-            // rendering
-            sf::VertexArray va(sf::PrimitiveType::Triangles, 3);
-            va[0].position = p0;
-            va[1].position = p1;
-            va[2].position = p2;
-            va[0].color = render_color;
-            va[1].color = render_color;
-            va[2].color = render_color;
-            window.draw(va);
+            sf::Color render_color = calculate_color(lights);
+
+            // appending
+            buffer.append(sf::Vertex(p0, render_color));
+            buffer.append(sf::Vertex(p1, render_color));
+            buffer.append(sf::Vertex(p2, render_color));
         }
     };
 
@@ -369,7 +378,7 @@ namespace bst {
     class Mesh {
     private:
         // mtl parser (only colors, our 3D engine is simple, remember?)
-        std::map<std::string, sf::Color> parse_mtl(const std::string& mtl_path) const  {
+        static std::map<std::string, sf::Color> parse_mtl(const std::string& mtl_path)   {
             std::map<std::string, sf::Color> materials;
             std::ifstream file(mtl_path);
             if (!file.is_open()) {
@@ -467,6 +476,7 @@ namespace bst {
         // Painter's algorithm (yup I know Bob Ross draws faster)
         void render(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light) const {
             // some optimizations to don't calculate depths while sorting
+            sf::VertexArray buffer(sf::PrimitiveType::Triangles);
             struct tr_and_depth {
                 const Triangle* triangle;
                 float depth;
@@ -479,15 +489,20 @@ namespace bst {
                 sorted.push_back({&tr, dist});
             }
 
-            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth a, const tr_and_depth b) {
+            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
                 return a.depth > b.depth;
             });
             for (const tr_and_depth tr : sorted) {
-                tr.triangle->render(window, camera, light);
+                tr.triangle->append_to_buffer(window, camera, light, buffer);
             }
+
+            window.draw(buffer);
         }
 
+        // for a lot of lights
         void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
+            // some optimizations to don't calculate depths while sorting
+            sf::VertexArray buffer(sf::PrimitiveType::Triangles);
             struct tr_and_depth {
                 const Triangle* triangle;
                 float depth;
@@ -500,12 +515,14 @@ namespace bst {
                 sorted.push_back({&tr, dist});
             }
 
-            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth a, const tr_and_depth b) {
+            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
                 return a.depth > b.depth;
             });
             for (const tr_and_depth tr : sorted) {
-                tr.triangle->render(window, camera, lights);
+                tr.triangle->append_to_buffer(window, camera, lights, buffer);
             }
+
+            window.draw(buffer);
         }
 
         // .obj parser (oh no...)

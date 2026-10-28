@@ -47,7 +47,7 @@ int main() {
 
     // *the gif has ended*
 
-    bool is_dragging = false;
+    bool is_rotating = false, is_moving = false;
     sf::Vector2i last_mouse_pos;
 
     // the main cycle
@@ -57,14 +57,27 @@ int main() {
 
             if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) {
                 if (mousePressed->button == sf::Mouse::Button::Left) {
-                    is_dragging = true;
+                    is_rotating = true;
                     last_mouse_pos = sf::Mouse::getPosition(window);
                 }
             }
 
             if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>()) {
                 if (mouseReleased->button == sf::Mouse::Button::Left) {
-                    is_dragging = false;
+                    is_rotating = false;
+                }
+            }
+
+            if (const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()) {
+                if (mousePressed->button == sf::Mouse::Button::Right) {
+                    is_moving = true;
+                    last_mouse_pos = sf::Mouse::getPosition(window);
+                }
+            }
+
+            if (const auto* mouseReleased = event->getIf<sf::Event::MouseButtonReleased>()) {
+                if (mouseReleased->button == sf::Mouse::Button::Right) {
+                    is_moving = false;
                 }
             }
 
@@ -76,7 +89,7 @@ int main() {
             }
 
             if (event->is<sf::Event::MouseMoved>()) {
-                if (is_dragging) {
+                if (is_rotating) {
                     sf::Vector2i current_mouse_pos = sf::Mouse::getPosition(window);
                     auto delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
                     auto delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
@@ -84,6 +97,15 @@ int main() {
                     // Don't walk around the cube, just rotate it
                     // – Confucius
                     cube.rotate(delta_y * MOUSE_SENSITIVITY, delta_x * MOUSE_SENSITIVITY, 0.0f);
+
+                    last_mouse_pos = current_mouse_pos;
+                }
+                if (is_moving) {
+                    sf::Vector2i current_mouse_pos = sf::Mouse::getPosition(window);
+                    auto delta_x = static_cast<float>(current_mouse_pos.x - last_mouse_pos.x);
+                    auto delta_y = static_cast<float>(current_mouse_pos.y - last_mouse_pos.y);
+
+                    cube.move({delta_x * MOUSE_SENSITIVITY, -delta_y * MOUSE_SENSITIVITY, 0.0f});
 
                     last_mouse_pos = current_mouse_pos;
                 }

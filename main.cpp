@@ -21,6 +21,7 @@
 
 const int WIDTH = 800, HEIGHT = 600;
 const float MOUSE_SENSITIVITY = 0.7f;
+const float SCROLL_SENSITIVITY = 0.01f;
 
 int main() {
     // test: a cube that you can rotate by mouse
@@ -65,6 +66,13 @@ int main() {
                 if (mouseReleased->button == sf::Mouse::Button::Left) {
                     is_dragging = false;
                 }
+            }
+
+            // zoom
+            if (const auto* mouseScrolled = event->getIf<sf::Event::MouseWheelScrolled>()) {
+                float scroll_delta = 1.0f + mouseScrolled->delta * SCROLL_SENSITIVITY;
+                if (scroll_delta < 0.1f) scroll_delta = 0.1f;
+                cube.scale(scroll_delta, scroll_delta, scroll_delta);
             }
 
             if (event->is<sf::Event::MouseMoved>()) {

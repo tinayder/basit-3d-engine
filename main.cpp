@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.5.4 – Code Example
+ * Basit 3D Engine v1.5.5 – Code Example
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -38,11 +38,12 @@ int main() {
     // some rain dancing for my CLion compiler
     std::string path_str = std::filesystem::current_path().string();
     size_t pos = path_str.find("cmake-build-debug");
-    std::string path = (pos != std::string::npos ? path_str.substr(0, pos) : path_str) + "assets/cube.obj";
+    std::string path = (pos != std::string::npos ? path_str.substr(0, pos) : path_str) + "assets/utah_teapot.obj";
 
     // *insert epic gif of a guy making a cube in blender*
 
     bst::Mesh cube(path);
+    cube.scale(25, 25, 25);
 
     // *the gif has ended*
 

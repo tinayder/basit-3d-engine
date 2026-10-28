@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.5.4
+ * Basit 3D Engine v1.5.5
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -325,7 +325,7 @@ namespace bst {
         }
 
         // appends vertices of the triangle to the buffer
-        void append_to_buffer(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light, sf::VertexArray& buffer) const {
+        void append_to_buffer(const Camera& camera, const DirectedLight& light, sf::VertexArray& buffer) const {
             sf::Vector2f p0 = camera.project(vertices[0]);
             sf::Vector2f p1 = camera.project(vertices[1]);
             sf::Vector2f p2 = camera.project(vertices[2]);
@@ -349,7 +349,7 @@ namespace bst {
         }
 
         // for a lot of lights
-        void append_to_buffer(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights, sf::VertexArray& buffer) const {
+        void append_to_buffer(const Camera& camera, const std::vector<DirectedLight>& lights, sf::VertexArray& buffer) const {
             sf::Vector2f p0 = camera.project(vertices[0]);
             sf::Vector2f p1 = camera.project(vertices[1]);
             sf::Vector2f p2 = camera.project(vertices[2]);
@@ -489,11 +489,11 @@ namespace bst {
                 sorted.push_back({&tr, dist});
             }
 
-            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
+            std::stable_sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
                 return a.depth > b.depth;
             });
-            for (const tr_and_depth tr : sorted) {
-                tr.triangle->append_to_buffer(window, camera, light, buffer);
+            for (const auto& tr : sorted) {
+                tr.triangle->append_to_buffer(camera, light, buffer);
             }
 
             window.draw(buffer);
@@ -518,8 +518,8 @@ namespace bst {
             std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
                 return a.depth > b.depth;
             });
-            for (const tr_and_depth tr : sorted) {
-                tr.triangle->append_to_buffer(window, camera, lights, buffer);
+            for (const auto& tr : sorted) {
+                tr.triangle->append_to_buffer(camera, lights, buffer);
             }
 
             window.draw(buffer);

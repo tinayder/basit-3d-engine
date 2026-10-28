@@ -38,12 +38,11 @@ int main() {
     // some rain dancing for my CLion compiler
     std::string path_str = std::filesystem::current_path().string();
     size_t pos = path_str.find("cmake-build-debug");
-    std::string path = (pos != std::string::npos ? path_str.substr(0, pos) : path_str) + "assets/utah_teapot.obj";
+    std::string path = (pos != std::string::npos ? path_str.substr(0, pos) : path_str) + "assets/cube.obj";
 
     // *insert epic gif of a guy making a cube in blender*
 
     bst::Mesh cube(path);
-    cube.scale(25, 25, 25);
 
     // *the gif has ended*
 

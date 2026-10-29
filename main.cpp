@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.5.5 – Code Example
+ * Basit 3D Engine v1.7.0 – Code Example
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -50,6 +50,10 @@ int main() {
     bool is_rotating = false, is_moving = false;
     sf::Vector2i last_mouse_pos;
 
+    // for fps
+    sf::Clock clock;
+    unsigned frame_cnt = 0;
+
     // the main cycle
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -85,10 +89,6 @@ int main() {
             if (const auto* mouseScrolled = event->getIf<sf::Event::MouseWheelScrolled>()) {
                 float scroll_delta = mouseScrolled->delta * SCROLL_SENSITIVITY;
                 camera.fov -= scroll_delta;
-                if (camera.fov < 0.1f) camera.fov = 0.1f;
-                if (camera.fov > 2.5f) camera.fov = 2.5f;
-                std::cout << camera.fov << '\n';
-                camera.projection = bst::Matrix::projection(camera.fov, camera.aspect, camera.near, camera.far);
             }
 
             if (event->is<sf::Event::MouseMoved>()) {
@@ -99,11 +99,7 @@ int main() {
 
                     // Don't walk around the cube, just rotate it
                     // – Confucius
-                    bst::Point d = cube.position;
-                    // moving the cube in the center, rotate it and return it to his origin to rotate it around itself
-                    cube.move({-d.x, -d.y, -d.z});
                     cube.rotate(delta_y * MOUSE_SENSITIVITY, delta_x * MOUSE_SENSITIVITY, 0.0f);
-                    cube.move(d);
 
                     last_mouse_pos = current_mouse_pos;
                 }
@@ -124,6 +120,14 @@ int main() {
         cube.render(window, camera, lights);
 
         window.display();
+
+        frame_cnt++;
+        float seconds = clock.getElapsedTime().asSeconds();
+        if (seconds >= 1.0f) {
+            window.setTitle("3D Cube Test - Basit Engine | FPS: " + std::to_string(static_cast<int>(static_cast<float>(frame_cnt) / seconds)));
+            frame_cnt = 0;
+            clock.restart();
+        }
     }
 
     return 0;

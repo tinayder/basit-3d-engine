@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.5.5
+ * Basit 3D Engine v1.7.0
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -17,9 +17,9 @@
 #pragma once
 
 #define BASIT_VERSION_MAJOR 1
-#define BASIT_VERSION_MINOR 5
-#define BASIT_VERSION_PATCH 5
-#define BASIT_VERSION "1.5.5"
+#define BASIT_VERSION_MINOR 7
+#define BASIT_VERSION_PATCH 0
+#define BASIT_VERSION "1.7.0"
 #define BASIT_VERSION_HEX ((BASIT_VERSION_MAJOR << 16) | (BASIT_VERSION_MINOR << 8) | BASIT_VERSION_PATCH)
 
 #include <vector>
@@ -202,7 +202,6 @@ namespace bst {
         float fov, near, far;
         int screen_width, screen_height;
         float aspect;
-        Matrix projection;
 
         Camera(const Point& define_position,
             float define_rot_x, float define_rot_y, float define_rot_z,
@@ -218,26 +217,16 @@ namespace bst {
             this->near = define_near;
             this->far = define_far;
             this->aspect = static_cast<float>(this->screen_width) / static_cast<float>(this->screen_height);
-            this->projection = Matrix::projection(this->fov, this->aspect, this->near, this->far);
         }
 
-        [[nodiscard]] sf::Vector2f project(const Point& point) const {
-            Point local = point - this->position;
+        [[nodiscard]] Matrix view_matrix() const {
+            Matrix translation = Matrix::translation(-position.x, -position.y, -position.z);
+            Matrix rotation = Matrix::rotation_z(rot_z * TO_RAD) * Matrix::rotation_y(rot_y * TO_RAD) * Matrix::rotation_x(rot_x * TO_RAD);
+            return translation * rotation;
+        }
 
-            Matrix mr = Matrix::rotation_z(rot_z * TO_RAD) * Matrix::rotation_y(rot_y * TO_RAD) * Matrix::rotation_x(rot_x * TO_RAD);
-            Point final_point = local * mr;
-            final_point.z *= -1.0f;
-
-            if (final_point.z <= near || final_point.z >= far) {
-                return {-1.0f, -1.0f};
-            }
-
-            // projecting
-            Point ndc = final_point * projection;
-
-            float prx = (ndc.x + 1.0f) * 0.5f * static_cast<float>(this->screen_width);
-            float pry = (1.0f - ndc.y) * 0.5f * static_cast<float>(this->screen_height);
-            return {prx, pry};
+        [[nodiscard]] Matrix projection() const {
+            return Matrix::projection(this->fov, this->aspect, this->near, this->far);
         }
     };
 
@@ -259,7 +248,7 @@ namespace bst {
     class Triangle {
     public:
         Point vertices[3];
-        Point normal;
+        Point local_normal;
         sf::Color color;
 
         Triangle(const Point& vertice1, const Point& vertice2, const Point& vertice3, const sf::Color& define_color) {
@@ -270,33 +259,11 @@ namespace bst {
             Point edge1 = this->vertices[1] - this->vertices[0];
             Point edge2 = this->vertices[2] - this->vertices[0];
             Point cross_product = edge1.cross_product(edge2);
-            this->normal = cross_product.normalize();
+            this->local_normal = cross_product.normalize();
         }
 
-        // for light
-        [[nodiscard]] sf::Color calculate_color(const DirectedLight& light) const {
-            // color of the triangle
-            float base_color_r = static_cast<float>(this->color.r) / 255.0f;
-            float base_color_g = static_cast<float>(this->color.g) / 255.0f;
-            float base_color_b = static_cast<float>(this->color.b) / 255.0f;
-
-            float dot = normal * light.direction;
-            if (dot < 0.0f) dot = 0.0f;
-            float final_intensity = dot * light.intensity;
-            float r = static_cast<float>(light.color.r) / 255.0f;
-            float g = static_cast<float>(light.color.g) / 255.0f;
-            float b = static_cast<float>(light.color.b) / 255.0f;
-            r = r * r * final_intensity * base_color_r;
-            g = g * g * final_intensity * base_color_g;
-            b = b * b * final_intensity * base_color_b;
-            std::uint8_t final_r = static_cast<std::uint8_t>(std::clamp(r, 0.0f, 255.0f));
-            std::uint8_t final_g = static_cast<std::uint8_t>(std::clamp(g, 0.0f, 255.0f));
-            std::uint8_t final_b = static_cast<std::uint8_t>(std::clamp(b, 0.0f, 255.0f));
-            return {final_r, final_g, final_b};
-        }
-
-        // for a lot of lights
-        [[nodiscard]] sf::Color calculate_color(const std::vector<DirectedLight>& lights) const {
+        // flat shading
+        [[nodiscard]] sf::Color calculate_color(const Point& normal, const std::vector<DirectedLight>& lights) const {
             // color of the triangle
             float base_color_r = static_cast<float>(this->color.r) / 255.0f;
             float base_color_g = static_cast<float>(this->color.g) / 255.0f;
@@ -323,60 +290,46 @@ namespace bst {
             return {final_r, final_g, final_b};
         }
 
-        // for Painter's algorithm
-        [[nodiscard]] float average_depth(const Point& camera_position) const {
-            Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
-            float result = (center - camera_position).modulus();
-            return result;
-        }
-
         // appends vertices of the triangle to the buffer
-        void append_to_buffer(const Camera& camera, const DirectedLight& light, sf::VertexArray& buffer) const {
-            sf::Vector2f p0 = camera.project(vertices[0]);
-            sf::Vector2f p1 = camera.project(vertices[1]);
-            sf::Vector2f p2 = camera.project(vertices[2]);
-            // checking if the point is not visible
-            if (p0 == sf::Vector2f(-1.0f, -1.0f) ||
-            p1 == sf::Vector2f(-1.0f, -1.0f) ||
-            p2 == sf::Vector2f(-1.0f, -1.0f)) return;
+        void append_to_buffer(const Matrix& world, const Matrix& view_matrix, const Matrix& projection,
+            const Camera& camera, const std::vector<DirectedLight>& lights, sf::VertexArray& buffer) const {
+            Point w0 = vertices[0] * world;
+            Point w1 = vertices[1] * world;
+            Point w2 = vertices[2] * world;
 
-            // culling
-            Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
-            Point view = (center - camera.position).normalize();
-            float dot_product = this->normal * view;
-            if (dot_product > 0.0f) return;
-
-            sf::Color render_color = calculate_color(light);
-
-            // appending
-            buffer.append(sf::Vertex(p0, render_color));
-            buffer.append(sf::Vertex(p1, render_color));
-            buffer.append(sf::Vertex(p2, render_color));
-        }
-
-        // for a lot of lights
-        void append_to_buffer(const Camera& camera, const std::vector<DirectedLight>& lights, sf::VertexArray& buffer) const {
-            sf::Vector2f p0 = camera.project(vertices[0]);
-            sf::Vector2f p1 = camera.project(vertices[1]);
-            sf::Vector2f p2 = camera.project(vertices[2]);
-            // checking if the point is not visible
-            if (p0 == sf::Vector2f(-1.0f, -1.0f) ||
-            p1 == sf::Vector2f(-1.0f, -1.0f) ||
-            p2 == sf::Vector2f(-1.0f, -1.0f)) return;
-
-            // culling
-            Point center = (this->vertices[0] + this->vertices[1] + this->vertices[2]) * (1.0f / 3.0f);
+            Point center = (w0 + w1 + w2) * (1.0f / 3.0f);
             Point view = (center - camera.position).normalize();
 
-            float dot_product = this->normal * view;
-            if (dot_product > 0.0f) return;
+            // making rotation matrix
+            Matrix rotation = world;
+            rotation.m[3] = 0;
+            rotation.m[7] = 0;
+            rotation.m[11] = 0;
+            Point world_normal = (this->local_normal * rotation).normalize();
 
-            sf::Color render_color = calculate_color(lights);
+            // culling
+            if (world_normal * view > 0.0f) return;
 
-            // appending
-            buffer.append(sf::Vertex(p0, render_color));
-            buffer.append(sf::Vertex(p1, render_color));
-            buffer.append(sf::Vertex(p2, render_color));
+            Point p0 = w0 * view_matrix;
+            Point p1 = w1 * view_matrix;
+            Point p2 = w2 * view_matrix;
+            // inverting z
+            p0.z *= -1.0f; p1.z *= -1.0f; p2.z *= -1.0f;
+
+            // if it's really near from the camera, we don't need it
+            if (p0.z <= camera.near || p1.z <= camera.near || p2.z <= camera.near) return;
+
+            Point ndc0 = p0 * projection;
+            Point ndc1 = p1 * projection;
+            Point ndc2 = p2 * projection;
+
+            sf::Color render_color = calculate_color(world_normal, lights);
+
+            for (auto p : {ndc0, ndc1, ndc2}) {
+                float prx = (p.x + 1.0f) * 0.5f * static_cast<float>(camera.screen_width);
+                float pry = (1.0f - p.y) * 0.5f * static_cast<float>(camera.screen_height);
+                buffer.append(sf::Vertex({prx, pry}, render_color));
+            }
         }
     };
 
@@ -430,13 +383,6 @@ namespace bst {
             this->rot_y = define_rot_y;
             this->rot_z = define_rot_z;
             this->polygons = define_polygons;
-            Matrix mr = Matrix::rotation_z(rot_z * TO_RAD) * Matrix::rotation_y(rot_y * TO_RAD) * Matrix::rotation_x(rot_x * TO_RAD);
-            for (Triangle& tr : this->polygons) {
-                for (Point& vertex : tr.vertices) {
-                    vertex = vertex * mr;
-                    vertex = vertex + this->position;
-                }
-            }
         }
 
         // must be in degrees!
@@ -444,45 +390,35 @@ namespace bst {
             rot_x += drx;
             rot_y += dry;
             rot_z += drz;
-            Matrix mr = Matrix::rotation_z(drz * TO_RAD) * Matrix::rotation_y(dry * TO_RAD) * Matrix::rotation_x(drx * TO_RAD);
-            for (Triangle& tr : this->polygons) {
-                for (Point& vertex : tr.vertices) {
-                    Point local = vertex - this->position;
-                    vertex = local * mr;
-                    vertex = vertex + this->position;
-                }
-                Point edge1 = tr.vertices[1] - tr.vertices[0];
-                Point edge2 = tr.vertices[2] - tr.vertices[0];
-                Point cross_product = edge1.cross_product(edge2);
-                tr.normal = cross_product.normalize();
-            }
         }
 
         void move(const Point& d) {
             this->position = this->position + d;
-            for (Triangle& tr : this->polygons) {
-                for (Point& vertex : tr.vertices) {
-                    vertex = vertex + d;
-                }
-            }
         }
 
         void scale(float sx, float sy, float sz) {
             this->scale_x = sx;
             this->scale_y = sy;
             this->scale_z = sz;
-            Matrix sc = Matrix::scale(sx, sy, sz);
-            for (Triangle& tr : this->polygons) {
-                for (Point& vertex : tr.vertices) {
-                    vertex = vertex * sc;
-                }
-            }
         }
 
-        // Painter's algorithm (yup I know Bob Ross draws faster)
-        void render(sf::RenderWindow& window, const Camera& camera, const DirectedLight& light) const {
-            // some optimizations to don't calculate depths while sorting
+        // to don't change the original mesh (and optimize hehehe)
+        [[nodiscard]] Matrix get_world() const {
+            Matrix scale = Matrix::scale(scale_x, scale_y, scale_z);
+            Matrix rotation = Matrix::rotation_z(rot_z * TO_RAD) * Matrix::rotation_y(rot_y * TO_RAD) * Matrix::rotation_x(rot_x * TO_RAD);
+            Matrix translation = Matrix::translation(position.x, position.y, position.z);
+
+            return scale * rotation * translation;
+        }
+
+        // render...
+        void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
+            Matrix world = get_world();
+            Matrix view_matrix = camera.view_matrix();
+            Matrix projection = camera.projection();
             sf::VertexArray buffer(sf::PrimitiveType::Triangles);
+
+            // some optimizations to don't calculate depths while sorting
             struct tr_and_depth {
                 const Triangle* triangle;
                 float depth;
@@ -491,7 +427,13 @@ namespace bst {
             std::vector<tr_and_depth> sorted;
             sorted.reserve(polygons.size());
             for (const Triangle& tr : polygons) {
-                float dist = tr.average_depth(camera.position);
+                Point w0 = tr.vertices[0] * world;
+                Point w1 = tr.vertices[1] * world;
+                Point w2 = tr.vertices[2] * world;
+
+                // Painter's algorithm (yup I know Bob Ross draws faster)
+                Point center = (w0 + w1 + w2) * (1.0f / 3.0f);
+                float dist = (center - camera.position).modulus();
                 sorted.push_back({&tr, dist});
             }
 
@@ -499,33 +441,7 @@ namespace bst {
                 return a.depth > b.depth;
             });
             for (const auto& tr : sorted) {
-                tr.triangle->append_to_buffer(camera, light, buffer);
-            }
-
-            window.draw(buffer);
-        }
-
-        // for a lot of lights
-        void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
-            // some optimizations to don't calculate depths while sorting
-            sf::VertexArray buffer(sf::PrimitiveType::Triangles);
-            struct tr_and_depth {
-                const Triangle* triangle;
-                float depth;
-            };
-
-            std::vector<tr_and_depth> sorted;
-            sorted.reserve(polygons.size());
-            for (const Triangle& tr : polygons) {
-                float dist = tr.average_depth(camera.position);
-                sorted.push_back({&tr, dist});
-            }
-
-            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
-                return a.depth > b.depth;
-            });
-            for (const auto& tr : sorted) {
-                tr.triangle->append_to_buffer(camera, lights, buffer);
+                tr.triangle->append_to_buffer(world, view_matrix, projection, camera, lights, buffer);
             }
 
             window.draw(buffer);

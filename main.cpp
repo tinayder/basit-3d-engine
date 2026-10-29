@@ -83,9 +83,12 @@ int main() {
 
             // zoom
             if (const auto* mouseScrolled = event->getIf<sf::Event::MouseWheelScrolled>()) {
-                float scroll_delta = 1.0f + mouseScrolled->delta * SCROLL_SENSITIVITY;
-                if (scroll_delta < 0.1f) scroll_delta = 0.1f;
-                cube.scale(scroll_delta, scroll_delta, scroll_delta);
+                float scroll_delta = mouseScrolled->delta * SCROLL_SENSITIVITY;
+                camera.fov -= scroll_delta;
+                if (camera.fov < 0.1f) camera.fov = 0.1f;
+                if (camera.fov > 2.5f) camera.fov = 2.5f;
+                std::cout << camera.fov << '\n';
+                camera.projection = bst::Matrix::projection(camera.fov, camera.aspect, camera.near, camera.far);
             }
 
             if (event->is<sf::Event::MouseMoved>()) {

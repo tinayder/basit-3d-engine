@@ -9,8 +9,6 @@ Some screenshots:
 
 <img width="912" height="744" alt="Screenshot of Utah's Teapot rendered using Basit Engine" src="https://github.com/user-attachments/assets/7f0abaf2-bab1-41f9-b06f-6868a1903a73" title="classic"/>
 
-<img width="912" height="744" alt="Screenshot of Jungle Mario Kart level rendered using Basit Engine" src="https://github.com/user-attachments/assets/46425f01-765e-4762-91a9-1d7094f1215f" title="this thing made my processor die"/>
-
 ## How to use this thing?
 It's as simple as the project. Before working with Basit, you must install SFML – Simple and Fast Multimedia Library (should be version 3.0.0 or newer), here are the links where you can download it:
 

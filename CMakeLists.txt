@@ -8,6 +8,6 @@ add_executable(basit basit.hpp
 )
 include_directories(/usr/local/SFML-3.0.2/include)
 
-find_package(SFML 3.0.2 COMPONENTS System Window Graphics Network Audio REQUIRED)
+find_package(SFML 3.0.2 COMPONENTS System Window Graphics REQUIRED)
 include_directories(${SFML_INCLUDE_DIRS})
-target_link_libraries(basit SFML::System SFML::Window SFML::Graphics SFML::Audio SFML::Network)
+target_link_libraries(basit SFML::System SFML::Window SFML::Graphics)

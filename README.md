@@ -43,5 +43,4 @@ Everything is mine, except SFML, of course =).
 `.obj` files that were used for testing:
 - 3D Cube made by me (check `assets` directory);
 - Utah Teapot: https://graphics.cs.utah.edu/teapot/
-- MarioKart Jungle level: https://models.spriters-resource.com/wii_u/mariokart8/
 - Part of Caucasus relief: https://terraprinter.com/

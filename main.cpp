@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.7.0 – Code Example
+ * Basit 3D Engine v1.7.3 – Code Example
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine

@@ -8,7 +8,7 @@
  * | $$$$$$$$$$$$ | $$$$  | $$$$  /$$$$$$$$$$$$  /$$$$$$$$$$$$     | $$$$
  * |/___________/ |/___/  |/___/ |/___________/ |/___________/     |/___/
  *
- * Basit 3D Engine v1.7.0
+ * Basit 3D Engine v1.7.3
  * [ arabic: basit - "simple" ]
  * (c) 2026 tinayder - MIT License
  * https://github.com/tinayder/basit-3d-engine
@@ -18,8 +18,8 @@
 
 #define BASIT_VERSION_MAJOR 1
 #define BASIT_VERSION_MINOR 7
-#define BASIT_VERSION_PATCH 0
-#define BASIT_VERSION "1.7.0"
+#define BASIT_VERSION_PATCH 3
+#define BASIT_VERSION "1.7.3"
 #define BASIT_VERSION_HEX ((BASIT_VERSION_MAJOR << 16) | (BASIT_VERSION_MINOR << 8) | BASIT_VERSION_PATCH)
 
 #include <vector>
@@ -27,6 +27,7 @@
 #include <cmath>
 #include <string>
 #include <map>
+#include <thread>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -36,6 +37,8 @@
 namespace bst {
     inline constexpr float PI = 3.14159265f;
     inline constexpr float TO_RAD = PI / 180.0f;
+    // THREADS
+    inline const size_t THREADS_NUM = std::thread::hardware_concurrency();
 
     // AAAAGH
     class Matrix {
@@ -370,6 +373,14 @@ namespace bst {
             }
             return materials;
         }
+
+        struct tr_and_depth {
+            const Triangle* triangle;
+            float depth;
+        };
+        std::vector<tr_and_depth> sorted;
+
+        size_t polygon_num;
     public:
         Point position = {0, 0, 0};
         float rot_x = 0, rot_y = 0, rot_z = 0;
@@ -383,6 +394,7 @@ namespace bst {
             this->rot_y = define_rot_y;
             this->rot_z = define_rot_z;
             this->polygons = define_polygons;
+            polygon_num = polygons.size();
         }
 
         // must be in degrees!
@@ -412,32 +424,42 @@ namespace bst {
         }
 
         // render...
-        void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) const {
+        void render(sf::RenderWindow& window, const Camera& camera, const std::vector<DirectedLight>& lights) {
+            // calculating matrices
             Matrix world = get_world();
             Matrix view_matrix = camera.view_matrix();
             Matrix projection = camera.projection();
             sf::VertexArray buffer(sf::PrimitiveType::Triangles);
 
-            // some optimizations to don't calculate depths while sorting
-            struct tr_and_depth {
-                const Triangle* triangle;
-                float depth;
+            sorted.resize(polygon_num);
+
+            auto worker = [&](size_t start_i, size_t end_i) {
+                for (size_t i = start_i; i < end_i; i++) {
+                    const Triangle& tr = polygons[i];
+                    Point w0 = tr.vertices[0] * world;
+                    Point w1 = tr.vertices[1] * world;
+                    Point w2 = tr.vertices[2] * world;
+
+                    // Painter's algorithm (yup I know Bob Ross draws faster)
+                    Point center = (w0 + w1 + w2) * (1.0f / 3.0f);
+                    float dist = (center - camera.position).modulus();
+                    sorted[i] = {&tr, dist};
+                }
             };
 
-            std::vector<tr_and_depth> sorted;
-            sorted.reserve(polygons.size());
-            for (const Triangle& tr : polygons) {
-                Point w0 = tr.vertices[0] * world;
-                Point w1 = tr.vertices[1] * world;
-                Point w2 = tr.vertices[2] * world;
+            // THREEEEAAAADS
+            std::vector<std::jthread> threads;
+            size_t chunk = polygon_num / THREADS_NUM;
 
-                // Painter's algorithm (yup I know Bob Ross draws faster)
-                Point center = (w0 + w1 + w2) * (1.0f / 3.0f);
-                float dist = (center - camera.position).modulus();
-                sorted.push_back({&tr, dist});
+            for (size_t i = 0; i < THREADS_NUM; i++) {
+                size_t start_i = i * chunk;
+                size_t end_i = i == THREADS_NUM - 1 ? polygon_num : start_i + chunk;
+                if (start_i < end_i) threads.emplace_back(worker, start_i, end_i);
             }
 
-            std::stable_sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
+            threads.clear();
+
+            std::sort(sorted.begin(), sorted.end(), [](const tr_and_depth& a, const tr_and_depth& b) {
                 return a.depth > b.depth;
             });
             for (const auto& tr : sorted) {
@@ -529,6 +551,7 @@ namespace bst {
                     }
                 }
             }
+            polygon_num = polygons.size();
         }
     };
 } // namespace bst

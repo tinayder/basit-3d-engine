@@ -1,7 +1,7 @@
 # Basit – 3D Engine
 Welcome to my second project on GitHub – my 3D Engine named Basit. In Arabic language, "basit" means "simple". So this project is SUPER SIMPLE (so simple that it's a CPU engine).
 
-This engine can draw 3D objects and parse `.obj` files. It uses flat shading, culling optimization, Painter's algorithm and other stuff.
+This engine can draw 3D objects and parse `.obj` files. It uses flat shading, culling optimization, Painter's algorithm, multithreading and other stuff.
 
 Some screenshots:
 

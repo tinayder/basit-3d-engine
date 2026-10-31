@@ -3,9 +3,7 @@ project(basit)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(basit basit.hpp
-        main.cpp
-)
+add_executable(basit basit.hpp main.cpp)
 include_directories(/usr/local/SFML-3.0.2/include)
 
 find_package(SFML 3.0.2 COMPONENTS System Window Graphics REQUIRED)
